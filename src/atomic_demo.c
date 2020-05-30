@@ -29,6 +29,8 @@ uint64_t main (uint64_t argc, char *argv[]) {
     __asm__ volatile("amoadd.d %0, %2, (%1)": "=r"(atomic_result) : "r"(&atomic_var), "r"(atomic_inc):);
     *print_addr = (uint8_t) atomic_result >> 8;
     *print_addr = (uint8_t) atomic_result;
-
+    
+    bp_finish(0);
+    
     return 0;
 }
