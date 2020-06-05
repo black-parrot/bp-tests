@@ -5,11 +5,14 @@
  */
 #include <stdint.h>
 #include "bp_utils.h"
+#define NUM_INTERRUPTS 8
 
 uint8_t int_count = 48;
-uint64_t mtimecmp_data = 64;
-uint64_t mtimecmp = 0x304000;
-uint64_t mtime = 0x30bff8;
+uint64_t *mtimecmp = 0x304000;
+uint64_t *mtime = 0x30bff8;
+
+void pass() { bp_finish(0); }
+void fail() { bp_finish(1); }
 
 void trap_success(void) __attribute__((interrupt));
 void trap_success() {
@@ -21,34 +24,29 @@ void trap_success() {
     if ((mcause >> 63) == 1) {
       if(((mcause & 7) == 4) || ((mcause & 7) == 5) || ((mcause & 7) == 7))
         int_count++;
-        // To account for mtimecmp updation time. Arbitrarily chosen number.
-        mtimecmp_data += 1024;
-        // Need to write to mtimecmp to clear the interrupt
-        __asm__ __volatile__ ("li t3, 0x304000");
-        __asm__ __volatile__ ("sd %0, 0(t3)": : "r"(mtimecmp_data-1));
+        // Sufficiently far in the future to have delayed interrupts
+        // Writes to mtimecmp clears the interrupt
+        *mtimecmp = *mtime + 1024;
         bp_cprint(int_count);
         bp_cprint(10);
-        if((int_count - 48) == 8)
-          bp_finish(0);
+        if((int_count - 48) == NUM_INTERRUPTS)
+          pass();
     }
     else {
       bp_cprint(int_count);
       bp_cprint(10);
-      bp_finish(1);
+      fail();
     }
 }
 
 void main(uint64_t argc, char * argv[]) {
-   uint64_t mie = 176; // M + S + U timer interrupt enable
-   uint64_t mstatus = 11; // Global interrupt enable
-   int iter_count = 0;
+   uint64_t mie = (1 << 7) | (1 << 5) | (1 << 4); // M + S + U timer interrupt enable
+   uint64_t mstatus = (1 << 3) | (1 << 1) | (1 << 0); // Global interrupt enable
    // Set up trap to alternate handler
    __asm__ __volatile__ ("csrw mtvec, %0": : "r" (&trap_success));
    // Setting up mtimecmp and mtime with some arbitrary values
-   __asm__ __volatile__ ("li t4, 0x304000");
-   __asm__ __volatile__ ("sd %0, 0(t4)": : "r"(mtimecmp_data-1));
-   __asm__ __volatile__ ("li a5, 0x30bff8");
-   __asm__ __volatile__ ("sd zero, 0(a5)");
+   *mtimecmp = 64;
+   *mtime = 0;
    // Enabling interrupts for User, Supervisor and Machine mode
    __asm__ __volatile__ ("csrw mie, %0": : "r" (mie));
    __asm__ __volatile__ ("csrw mstatus, %0" : : "r" (mstatus));
