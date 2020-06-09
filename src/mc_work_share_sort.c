@@ -88,7 +88,6 @@ uint64_t thread_main() {
     uint32_t arr_index = getNextArray(&array);
     if (array) {
       sortArray(array);
-      bp_hprint(arr_index);
     } else {
       break;
     }

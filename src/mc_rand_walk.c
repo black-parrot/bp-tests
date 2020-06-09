@@ -104,7 +104,6 @@ uint64_t thread_main() {
   player_init(&pos);
   while (epoch < MAX_EPOCHS) {
     player_walk(&pos, WALK_STEPS);
-    bp_hprint(core_id);
     player_sync(core_id, epoch);
     epoch = epoch + 1;
   }

@@ -37,8 +37,6 @@ uint64_t main(uint64_t argc, char * argv[]) {
       sum += MATRIX[i*NUM_CORES + core_id];
     }
 
-    bp_hprint((uint8_t)sum);
-
     if (sum == K) {
       bp_finish(0);
     } else {
