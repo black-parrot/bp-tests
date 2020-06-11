@@ -45,7 +45,9 @@ BP_DEMOS_C = \
   cache_hammer \
   jalr_illegal \
   satp_nofence \
-  timer_interrupt_test
+  timer_interrupt_test \
+  loop_test \
+  cache_flush
 
 BP_DEMOS_S = \
 	simple                \
