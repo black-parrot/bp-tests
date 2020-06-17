@@ -49,7 +49,8 @@ BP_DEMOS_C = \
   timer_interrupt_test \
   loop_test \
   cache_flush \
-  stream_hammer
+  stream_hammer \
+	domain_fault
 
 BP_DEMOS_S = \
 	simple                \
