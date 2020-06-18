@@ -50,7 +50,8 @@ BP_DEMOS_C = \
   loop_test \
   cache_flush \
   stream_hammer \
-	domain_fault
+	domain_fault \
+	eaddr_fault
 
 BP_DEMOS_S = \
 	simple                \
