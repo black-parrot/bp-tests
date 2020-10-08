@@ -38,8 +38,8 @@ int main(int argc, char** argv) {
     // write the first 64-bit data of a block locating at incrementing indices and tags.
     // i iterates on indices
     // j iterates on tags
-    for (int i = 0; i < l2_sets; i++) {
-        for (int j = 0; j < assoc; j++) {
+    for (int j = 0; j < assoc; j++) {
+        for (int i = 0; i < l2_sets; i++) {
             uint64_t *addr = base_addr + (i << (index_offset-dword_bits)) + (j << (l2_tag_offset-dword_bits)); // address of same index (0) and different tag (0-100)
             uint64_t data = (uint64_t) addr | 0x0fff;
 
@@ -48,8 +48,8 @@ int main(int argc, char** argv) {
     }
 
     // check the writeback result
-    for (int i = 0; i < l1_sets; i++) {
-        for (int j = 0; j < assoc; j++) {
+    for (int j = 0; j < assoc; j++) {
+        for (int i = 0; i < l1_sets; i++) {
             uint64_t *addr = base_addr + (i << (index_offset-dword_bits)) + (j << (l2_tag_offset-dword_bits));
             uint64_t expected = (uint64_t) addr | 0x0fff;
             uint64_t actual = *addr;
