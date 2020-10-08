@@ -30,6 +30,7 @@ int main(int argc, char** argv) {
     uint64_t index_offset = block_offset_bits;
     uint64_t l1_tag_offset = l1_index_bits + block_offset_bits;
     uint64_t l2_tag_offset = l2_index_bits + block_offset_bits;
+    uint64_t dword_bits = 3;
 
     uint64_t core_id = bp_get_hart();
     uint64_t *base_addr = (uint64_t *)(0x80100000 + (core_id << 14));
@@ -39,7 +40,7 @@ int main(int argc, char** argv) {
     // j iterates on tags
     for (int i = 0; i < l2_sets; i++) {
         for (int j = 0; j < assoc; j++) {
-            uint64_t *addr = base_addr + (i << index_offset) + (j << l2_tag_offset); // address of same index (0) and different tag (0-100)
+            uint64_t *addr = base_addr + (i << (index_offset-dword_bits)) + (j << (l2_tag_offset-dword_bits)); // address of same index (0) and different tag (0-100)
             uint64_t data = (uint64_t) addr | 0x0fff;
 
             *addr = data;
@@ -49,7 +50,7 @@ int main(int argc, char** argv) {
     // check the writeback result
     for (int i = 0; i < l1_sets; i++) {
         for (int j = 0; j < assoc; j++) {
-            uint64_t *addr = base_addr + (i << index_offset) + (j << l2_tag_offset);
+            uint64_t *addr = base_addr + (i << (index_offset-dword_bits)) + (j << (l2_tag_offset-dword_bits));
             uint64_t expected = (uint64_t) addr | 0x0fff;
             uint64_t actual = *addr;
 
