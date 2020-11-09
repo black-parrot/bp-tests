@@ -1,13 +1,13 @@
 // This test is used to stress the BP Stream Protocol design implemented between UCE and L2,
-// Aimming to do frequent read/write with L1 cache miss and L2 hit.
-// Given l2_sets = 2 * l1_sets, we have the address format
+// Aiming to do frequent read/write with L1 cache miss and L2 hit.
+// Given l2_sets = 2 * l1_sets, we have the address format with 32kB L1 and 64kB L2 cfg:
 //       tag  |  index  |  block_offset
 // L1:   28      6         6 
 // L2:   27      7         6
 // which indicates that the first half and the second half of L2 cache maps to the same index in L1 cache 
 // We firstly write data to each block with indices from 0 to 127, using 8 different tags.
 // In this way, the cache block with indices from 0 to 63 will be written back to L2 cache to hold blocks with indices from 64 to 127
-// so we canhave L1 miss and L2 hit for indices from 0 to 63.
+// so we can have L1 miss and L2 hit for indices from 0 to 63.
 // Then, we read the cache block from 0 to 63 to check the written data.
 #include <stdint.h>
 #include "bp_utils.h"
