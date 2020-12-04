@@ -31,7 +31,7 @@ uint64_t main(uint64_t argc, char * argv[]) {
     vdp_csr.resp_ptr =  (uint64_t *) &resp_data;
 
     //type:1, streaming
-    bp_call_vector_dot_product_accelerator(1, vdp_csr);
+     bp_call_vector_dot_product_accelerator(1, vdp_csr);
 
     for(i = 0; i < 16;++i){      
       bp_cprint(TO_HEX((uint8_t)((resp_data>>i*4) & 0x0F)));

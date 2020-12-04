@@ -2,6 +2,7 @@ BP_DEMOS_C = \
   bubblesort_demo       \
   basic_demo            \
   streaming_accelerator_demo \
+  streaming_accelerator_zipline\
   coherent_accelerator_demo\
   atomic_queue_demo_2   \
   atomic_queue_demo_4   \
