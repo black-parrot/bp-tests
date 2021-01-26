@@ -14,33 +14,29 @@ all: bp-demo-riscv
 
 bp-demo-riscv: $(foreach x,$(subst -,_,$(BP_DEMOS)),$(x).riscv)
 
-%.riscv: %.o
-	$(RISCV_GCC) -o $@ $^ $(RISCV_LINK_OPTS)
+%.riscv: %.c
+	$(RISCV_GCC) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
 
-paging.riscv: vm_start.o paging.o
-	$(RISCV_GCC) -o $@ $^ $(RISCV_LINK_OPTS)
+%.riscv: %.S
+	$(RISCV_GCC) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
 
-mapping.riscv: vm_start.o mapping.o
-	$(RISCV_GCC) -o $@ $^ $(RISCV_LINK_OPTS)
+paging.riscv: vm_start.S paging.c
+	$(RISCV_GCC) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
 
-mc_sanity_%.riscv: mc_sanity.o
-	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_LINK_OPTS)
+mapping.riscv: vm_start.S mapping.c
+	$(RISCV_GCC) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
 
-mc_template_%.riscv: mc_template.o
-	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_LINK_OPTS)
+mc_sanity_%.riscv: mc_sanity.c
+	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
 
-mc_rand_walk_%.riscv: mc_rand_walk.o
-	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_LINK_OPTS)
+mc_template_%.riscv: mc_template.c
+	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
 
-mc_work_share_sort_%.riscv: mc_work_share_sort.o
-	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_LINK_OPTS)
+mc_rand_walk_%.riscv: mc_rand_walk.c
+	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
 
-%.o: %.c
-	$(RISCV_GCC) -c -o $@ $< $(RISCV_GCC_OPTS)
-
-%.o: %.S
-	$(RISCV_GCC) -c -o $@ $< $(RISCV_GCC_OPTS)
+mc_work_share_sort_%.riscv: mc_work_share_sort.c
+	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
 
 clean:
-	rm -f *.o
 	rm -f *.riscv

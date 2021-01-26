@@ -44,7 +44,8 @@ BP_DEMOS_C = \
   mstatus_fs            \
   wfi_test              \
   uncached_mode_test    \
-  amo_nonblocking
+  amo_nonblocking       \
+  dram_stress
 
 BP_DEMOS_S = \
   hello_world           \
