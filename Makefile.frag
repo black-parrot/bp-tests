@@ -53,7 +53,8 @@ BP_DEMOS_C = \
   domain_fault          \
   eaddr_fault           \
   paging                \
-  mapping
+  mapping               \
+  mstatus_fs
 
 BP_DEMOS_S = \
   simple                \
