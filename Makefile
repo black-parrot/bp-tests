@@ -1,7 +1,7 @@
 
 include Makefile.frag
 
-RISCV_GCC  = $(CROSS_COMPILE)gcc --static -nostartfiles -fPIC -march=rv64ima -mabi=lp64 -mcmodel=medany -I$(BP_TEST_DIR)/include
+RISCV_GCC  = $(CROSS_COMPILE)gcc --static -nostartfiles -march=rv64ima -mabi=lp64 -mcmodel=medany -I$(BP_TEST_DIR)/include
 RISCV_LINK = -static -nostartfiles -L$(BP_TEST_DIR)/lib -T src/riscv.ld
 
 .PHONY: all bp-demo-riscv bp-demo-s
@@ -13,6 +13,12 @@ bp-demo-s    : $(foreach x,$(subst -,_,$(BP_DEMOS_C)),$(x).s)
 
 %.riscv:
 	$(RISCV_GCC) $(RISCV_LINK) -o $@ src/$*.s -lperch
+
+paging.riscv:
+	$(RISCV_GCC) $(RISCV_LINK) -o $@ src/paging.s src/vm_start.S -lperch
+
+mapping.riscv:
+	$(RISCV_GCC) $(RISCV_LINK) -o $@ src/mapping.s src/vm_start.S -lperch
 
 uc_simple.riscv:
 	$(RISCV_GCC) -o $@ src/uc_simple.s src/uc_start.S
@@ -46,4 +52,5 @@ clean:
 	rm -f src/mc_rand_walk_*.s
 	rm -f src/mc_work_share_sort_*.s
 	rm -f src/queue_demo_*.s
+	rm -f $(foreach x,$(subst -,_,$(BP_DEMOS_C)),src/$(x).s)
 
