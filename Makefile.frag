@@ -43,19 +43,21 @@ BP_DEMOS_C = \
   mc_work_share_sort_8  \
   mc_work_share_sort_12 \
   mc_work_share_sort_16 \
-  cache_hammer \
-  jalr_illegal \
-  satp_nofence \
-  timer_interrupt_test \
-  loop_test \
-  cache_flush \
-  stream_hammer \
-	domain_fault \
-	eaddr_fault
+  cache_hammer          \
+  jalr_illegal          \
+  satp_nofence          \
+  timer_interrupt_test  \
+  loop_test             \
+  cache_flush           \
+  stream_hammer         \
+  domain_fault          \
+  eaddr_fault           \
+  paging                \
+  mapping
 
 BP_DEMOS_S = \
-	simple                \
-	uc_simple             \
+  simple                \
+  uc_simple             \
   hello_world           \
 
 BP_DEMOS = $(BP_DEMOS_S) $(BP_DEMOS_C)
