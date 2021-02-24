@@ -42,7 +42,8 @@ BP_DEMOS_C = \
   paging                \
   mapping               \
   mstatus_fs            \
-  wfi_test
+  wfi_test              \
+  uncached_mode_test
 
 BP_DEMOS_S = \
   hello_world           \
