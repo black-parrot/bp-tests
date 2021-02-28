@@ -43,7 +43,8 @@ BP_DEMOS_C = \
   mapping               \
   mstatus_fs            \
   wfi_test              \
-  uncached_mode_test
+  uncached_mode_test    \
+  amo_nonblocking
 
 BP_DEMOS_S = \
   hello_world           \
