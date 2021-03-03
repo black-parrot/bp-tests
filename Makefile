@@ -1,47 +1,46 @@
 
 include Makefile.frag
 
-RISCV_GCC  = $(CROSS_COMPILE)gcc --static -nostartfiles -march=rv64imafd -mabi=lp64 -mcmodel=medany -I$(BP_TEST_DIR)/include
-RISCV_LINK = -static -nostartfiles -L$(BP_TEST_DIR)/lib -T src/riscv.ld
+RISCV_GCC       = $(CROSS_COMPILE)gcc 
+RISCV_GCC_OPTS  = -march=rv64imafd -mabi=lp64 -mcmodel=medany -I $(BP_TEST_DIR)/include
+RISCV_LINK_OPTS = -T $(BP_TEST_DIR)/src/perch/riscv.ld -L$(BP_TEST_DIR)/lib -static -nostartfiles -lperch
 
-.PHONY: all bp-demo-riscv bp-demo-s
+.PHONY: all bp-demo-riscv
 
-all: bp-demo-s bp-demo-riscv
+vpath %.c ./src
+vpath %.S ./src
+
+all: bp-demo-riscv
 
 bp-demo-riscv: $(foreach x,$(subst -,_,$(BP_DEMOS)),$(x).riscv)
-bp-demo-s    : $(foreach x,$(subst -,_,$(BP_DEMOS_C)),$(x).s)
 
-%.riscv:
-	$(RISCV_GCC) $(RISCV_LINK) -o $@ src/$*.s -lperch
+%.riscv: %.o
+	$(RISCV_GCC) -o $@ $^ $(RISCV_LINK_OPTS)
 
-paging.riscv:
-	$(RISCV_GCC) $(RISCV_LINK) -o $@ src/paging.s src/vm_start.S -lperch
+paging.riscv: vm_start.o paging.o
+	$(RISCV_GCC) -o $@ $^ $(RISCV_LINK_OPTS)
 
-mapping.riscv:
-	$(RISCV_GCC) $(RISCV_LINK) -o $@ src/mapping.s src/vm_start.S -lperch
+mapping.riscv: vm_start.o mapping.o
+	$(RISCV_GCC) -o $@ $^ $(RISCV_LINK_OPTS)
 
-mc_sanity_%.s:
-	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -S -o src/mc_sanity_$(notdir $*).s src/mc_sanity.c
+mc_sanity_%.riscv: mc_sanity.o
+	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_LINK_OPTS)
 
-mc_template_%.s:
-	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -S -o src/mc_template_$(notdir $*).s src/mc_template.c
+mc_template_%.riscv: mc_template.o
+	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_LINK_OPTS)
 
-mc_rand_walk_%.s:
-	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -S -o src/mc_rand_walk_$(notdir $*).s src/mc_rand_walk.c
+mc_rand_walk_%.riscv: mc_rand_walk.o
+	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_LINK_OPTS)
 
-mc_work_share_sort_%.s:
-	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -S -o src/mc_work_share_sort_$(notdir $*).s src/mc_work_share_sort.c
+mc_work_share_sort_%.riscv: mc_work_share_sort.o
+	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_LINK_OPTS)
 
-%.s:
-	$(RISCV_GCC) -S -o src/$@ src/$*.c
+%.o: %.c
+	$(RISCV_GCC) -c -o $@ $< $(RISCV_GCC_OPTS)
+
+%.o: %.S
+	$(RISCV_GCC) -c -o $@ $< $(RISCV_GCC_OPTS)
 
 clean:
+	rm -f *.o
 	rm -f *.riscv
-	rm -f src/atomic_queue_demo_*.s
-	rm -f src/mc_sanity_*.s
-	rm -f src/mc_template_*.s
-	rm -f src/mc_rand_walk_*.s
-	rm -f src/mc_work_share_sort_*.s
-	rm -f src/queue_demo_*.s
-	rm -f $(foreach x,$(subst -,_,$(BP_DEMOS_C)),src/$(x).s)
-

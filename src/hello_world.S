@@ -2,9 +2,9 @@
 .option nopic
 .text
 .align 1
-.globl main
-.type  main, @function
-main:
+.globl _start
+.type  _start, @function
+_start:
     csrr x4, mhartid
     slli x4, x4, 3
     li x3, 0x00101000
