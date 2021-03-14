@@ -2,8 +2,8 @@
 include Makefile.frag
 
 RISCV_GCC       = $(CROSS_COMPILE)gcc 
-RISCV_GCC_OPTS  = -march=rv64imafd -mabi=lp64 -mcmodel=medany -I $(BP_TEST_DIR)/include
-RISCV_LINK_OPTS = -T $(BP_TEST_DIR)/src/perch/riscv.ld -L$(BP_TEST_DIR)/lib -static -nostartfiles -lperch
+RISCV_GCC_OPTS  = -march=rv64imafd -mabi=lp64 -mcmodel=medany -I $(BP_INCLUDE_DIR)
+RISCV_LINK_OPTS = -T $(BP_LINKER_DIR)/riscv.ld -L$(BP_LIB_DIR) -static -nostartfiles -lperch
 
 .PHONY: all bp-demo-riscv
 
