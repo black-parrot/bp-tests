@@ -1,4 +1,4 @@
-BP_DEMOS_C = \
+BP_TESTS_C = \
   bubblesort_demo       \
   streaming_accelerator_demo \
   streaming_accelerator_zipline\
@@ -47,8 +47,16 @@ BP_DEMOS_C = \
   amo_nonblocking       \
   amo_interrupt         \
 
-BP_DEMOS_S = \
+BP_TESTS_CPP = \
+  virtual               \
+  constructor           \
+  template              \
+  unwinding             \
+  vector                \
+  map
+
+BP_TESTS_S = \
   hello_world           \
 
-BP_DEMOS = $(BP_DEMOS_S) $(BP_DEMOS_C)
+BP_TESTS = $(BP_TESTS_S) $(BP_TESTS_C) $(BP_TESTS_CPP)
 
