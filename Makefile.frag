@@ -1,4 +1,5 @@
 BP_TESTS_C = \
+  hello_world           \
   bubblesort_demo       \
   streaming_accelerator_demo \
   streaming_accelerator_zipline\
@@ -55,8 +56,5 @@ BP_TESTS_CPP = \
   vector                \
   map
 
-BP_TESTS_S = \
-  hello_world           \
-
-BP_TESTS = $(BP_TESTS_S) $(BP_TESTS_C) $(BP_TESTS_CPP)
+BP_TESTS = $(BP_TESTS_C) $(BP_TESTS_CPP)
 
