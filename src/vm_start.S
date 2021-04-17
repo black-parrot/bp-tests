@@ -63,7 +63,7 @@ trap_vector:
   LOAD t0,5*REGBYTES(sp)
   LOAD t1,6*REGBYTES(sp)
   csrrw sp, mscratch, sp
-  j bp_mtvec_handler
+  j __mtvec_handler
 
   .globl  pop_tf
 pop_tf:
