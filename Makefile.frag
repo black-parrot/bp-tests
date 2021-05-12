@@ -47,7 +47,9 @@ BP_TESTS_C = \
   uncached_mode_test    \
   amo_nonblocking       \
   amo_interrupt         \
-  divide_hazard
+  divide_hazard         \
+  illegal_instruction   \
+  unhandled_trap
 
 BP_TESTS_CPP = \
   virtual               \
