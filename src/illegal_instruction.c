@@ -8,6 +8,9 @@
 // mtval:  0x0000000000000000
 // mepc:   0x000000008effefec
 // Illegal instruction
+//
+// This test is intended to fail ([CORE0 FSH] FAIL) as this is the desired
+// outcome for normal programs in the case of an illegal instruction.
 
 int main(int argc, char** argv) {
     int x = 0xDEADBEEF;

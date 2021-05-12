@@ -9,6 +9,9 @@
 // mtval:  0x0000007fffffffff
 // mepc:   0x000000008000019c
 // Unhandled machine-mode trap
+//
+// This test is intended to fail ([CORE0 FSH] FAIL) as this is the desired
+// outcome for normal programs in the case of an unhandled trap.
 
 int main(int argc, char** argv) {
     *(volatile int*)0xFFFFFFFFFFFFFFFF;
