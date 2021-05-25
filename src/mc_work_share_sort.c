@@ -125,9 +125,6 @@ uint64_t main(uint64_t argc, char * argv[]) {
   if (core_id == 0) {
     // wait for all threads to finish
     while (end_barrier_mem != NUM_CORES) { }
-    bp_finish(0);
-  } else {
-    bp_finish(0);
   }
 
   return 0;
