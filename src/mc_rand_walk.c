@@ -133,12 +133,17 @@ uint64_t main(uint64_t argc, char * argv[]) {
   // all threads execute
   thread_main();
 
-  // core 0 waits for all threads to finish
   if (core_id == 0) {
+    // core 0 waits for all threads to finish
     // wait for all threads to finish
     while (end_barrier_mem != NUM_CORES) { }
+    return 0;
+  } else {
+    bp_finish(0);
+    while (1) { }
   }
 
-  return 0;
+  // no core should reach this, return non-zero (error)
+  return 1;
 }
 
