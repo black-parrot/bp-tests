@@ -3,7 +3,17 @@
  *   mc_template.c
  *
  * Description:
- *   This is a template program for multicore tests.
+ *   This is a template program for multicore tests that run "baremetal" on BlackParrot.
+ *
+ *   This mimics a set of threads running, but does not use an actual threading
+ *   model. It is assumed that threads map to cores directly, e.g., thread 0
+ *   executes on core 0, thread 1 on core 1, etc.
+ *
+ *   Core 0 is the controlling core. At the end of execution, all cores synchronize
+ *   using a barrier. Core 0 waits for all cores to synchronize then returns from
+ *   main. All other cores call bp_finish() with argument of 0 as PASS, 1 as FAIL
+ *   and then enter a busy-wait loop. Only core 0 calls return to avoid races between
+ *   multiple cores calling return.
  *
  */
 
@@ -61,15 +71,19 @@ uint64_t main(uint64_t argc, char * argv[]) {
   // all threads execute
   thread_main();
 
-  // core 0 waits for all threads to finish
   if (core_id == 0) {
+    // core 0 waits for all threads to finish
     // wait for all threads to finish
     while (end_barrier_mem != NUM_CORES) { }
-    bp_finish(0);
+    return 0;
   } else {
+    // all other cores call finish (0 = pass, 1 = fail) ...
     bp_finish(0);
+    // ... then busy-wait for core 0 to terminate the execution
+    while (1) { }
   }
 
-  return 0;
+  // no core should reach this, return non-zero (error)
+  return 1;
 }
 
