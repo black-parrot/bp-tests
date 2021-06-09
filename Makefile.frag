@@ -49,7 +49,8 @@ BP_TESTS_C = \
   amo_interrupt         \
   divide_hazard         \
   illegal_instruction   \
-  unhandled_trap
+  unhandled_trap        \
+  aviary_rom_test       \
 
 BP_TESTS_CPP = \
   virtual               \
