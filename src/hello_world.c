@@ -18,7 +18,5 @@ int main(int argc, char** argv) {
     bp_cprint('!');
     bp_cprint('\n');
 
-    bp_finish(0);
-
     return 0;
 }
