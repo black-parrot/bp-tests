@@ -21,6 +21,7 @@ int main(uint64_t argc, char * argv[]) {
 
     if (bp_param_get(PARAM_VADDR_WIDTH) != 39) return -1;
     if (bp_param_get(PARAM_PADDR_WIDTH) != 40) return -1;
+    if (bp_param_get(PARAM_DADDR_WIDTH) != 33) return -1;
     if (bp_param_get(PARAM_CADDR_WIDTH) != 32) return -1;
     if (bp_param_get(PARAM_ASID_WIDTH)  != 1 ) return -1;
 
