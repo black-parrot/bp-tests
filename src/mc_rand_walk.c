@@ -19,10 +19,7 @@
 #include <stdint.h>
 #include "bp_utils.h"
 #include "mc_util.h"
-
-#ifndef NUM_CORES
-#define NUM_CORES 2
-#endif
+#include "aviary.h"
 
 // maximum number of simulation epochs
 #ifndef MAX_EPOCHS
@@ -75,7 +72,7 @@ void player_walk(pos_s *pos, int steps) {
   }
 }
 
-void player_sync(uint64_t core_id, uint64_t cur_epoch) {
+void player_sync(uint64_t core_id, uint64_t cur_epoch, uint32_t num_cores) {
   // all players increment the epoch_count when they are done with epoch
   lock(&global_lock);
   epoch_count_mem += 1;
@@ -83,7 +80,7 @@ void player_sync(uint64_t core_id, uint64_t cur_epoch) {
   // player 0 waits for epoch_count to equal number of cores
   // resets it to 0, then increments the epoch barrier
   if (core_id == 0) {
-    while (epoch_count_mem != NUM_CORES) { }
+    while (epoch_count_mem != num_cores) { }
     lock(&global_lock);
     epoch_count_mem = 0;
     epoch_barrier_mem += 1;
@@ -95,16 +92,13 @@ void player_sync(uint64_t core_id, uint64_t cur_epoch) {
   }
 }
 
-uint64_t thread_main() {
-  uint64_t core_id;
-  __asm__ volatile("csrr %0, mhartid": "=r"(core_id): :);
-
+uint64_t thread_main(uint64_t core_id, uint32_t num_cores) {
   uint64_t epoch = 0;
   pos_s pos;
   player_init(&pos);
   while (epoch < MAX_EPOCHS) {
     player_walk(&pos, WALK_STEPS);
-    player_sync(core_id, epoch);
+    player_sync(core_id, epoch, num_cores);
     epoch = epoch + 1;
   }
 
@@ -112,12 +106,12 @@ uint64_t thread_main() {
   lock(&global_lock);
   end_barrier_mem += 1;
   unlock(&global_lock);
-
 }
 
 uint64_t main(uint64_t argc, char * argv[]) {
   uint64_t core_id;
   __asm__ volatile("csrr %0, mhartid": "=r"(core_id): :);
+  uint32_t num_cores = bp_param_get(PARAM_CC_X_DIM) * bp_param_get(PARAM_CC_Y_DIM);
 
   // only core 0 intializes data structures
   if (core_id == 0) {
@@ -131,12 +125,12 @@ uint64_t main(uint64_t argc, char * argv[]) {
   }
 
   // all threads execute
-  thread_main();
+  thread_main(core_id, num_cores);
 
   if (core_id == 0) {
     // core 0 waits for all threads to finish
     // wait for all threads to finish
-    while (end_barrier_mem != NUM_CORES) { }
+    while (end_barrier_mem != num_cores) { }
     return 0;
   } else {
     bp_finish(0);

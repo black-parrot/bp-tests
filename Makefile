@@ -29,17 +29,5 @@ paging.riscv: vm_start.S paging.c
 mapping.riscv: vm_start.S mapping.c
 	$(RISCV_GCC) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS) -nostartfiles
 
-mc_sanity_%.riscv: mc_sanity.c
-	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
-
-mc_template_%.riscv: mc_template.c
-	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
-
-mc_rand_walk_%.riscv: mc_rand_walk.c
-	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
-
-mc_work_share_sort_%.riscv: mc_work_share_sort.c
-	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
-
 clean:
 	rm -f *.riscv
