@@ -15,49 +15,62 @@
  *   and then enter a busy-wait loop. Only core 0 calls return to avoid races between
  *   multiple cores calling return.
  *
+ *   MATRIX_SIZE defines the maximum size of the data matrix used in the test.
+ *   N defines the number of matrix elements accessed per core.
+ *   Constraint: N * num_cores <= MATRIX_SIZE
  */
 
 #include <stdint.h>
 #include "bp_utils.h"
 #include "mc_util.h"
+#include "aviary.h"
 
-#ifndef N
-#define N 16
+#ifndef MATRIX_SIZE
+#define MATRIX_SIZE 8192
 #endif
 
-typedef uint32_t matrix[N];
-matrix MATRIX;
-
-#ifndef NUM_CORES
-#define NUM_CORES 2
+#ifndef N
+#define N 512
 #endif
 
 volatile uint64_t __attribute__((aligned(64))) global_lock = 0;
 volatile uint64_t __attribute__((aligned(64))) start_barrier_mem = 0;
 volatile uint64_t __attribute__((aligned(64))) end_barrier_mem = 0;
 
-uint64_t thread_main() {
-  uint64_t core_id;
-  __asm__ volatile("csrr %0, mhartid": "=r"(core_id): :);
+typedef uint64_t matrix[N];
+matrix MATRIX;
+
+uint64_t thread_main(uint64_t core_id, uint32_t num_cores, uint32_t iterations) {
 
   // TODO: make the thread do something interesting
+  uint64_t sum = 0;
+  for (int i = 0; i < iterations; i++) {
+    sum += i;
+  }
+  MATRIX[core_id] = sum;
 
   // synchronize at end of computation by incrementing the end barrier
   lock(&global_lock);
   end_barrier_mem += 1;
   unlock(&global_lock);
 
+  return sum;
 }
 
 uint64_t main(uint64_t argc, char * argv[]) {
   uint64_t core_id;
   __asm__ volatile("csrr %0, mhartid": "=r"(core_id): :);
+  uint32_t num_cores = bp_param_get(PARAM_CC_X_DIM) * bp_param_get(PARAM_CC_Y_DIM);
+  // fail if matrix is too small
+  if (N*num_cores > MATRIX_SIZE) {
+    return 1;
+  }
 
   // only core 0 intializes data structures
   if (core_id == 0) {
     global_lock = 0;
 
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < MATRIX_SIZE; i++) {
       MATRIX[i] = i;
     }
 
@@ -69,12 +82,12 @@ uint64_t main(uint64_t argc, char * argv[]) {
   }
 
   // all threads execute
-  thread_main();
+  thread_main(core_id, num_cores, N);
 
   if (core_id == 0) {
     // core 0 waits for all threads to finish
     // wait for all threads to finish
-    while (end_barrier_mem != NUM_CORES) { }
+    while (end_barrier_mem != num_cores) { }
     return 0;
   } else {
     // all other cores call finish (0 = pass, 1 = fail) ...
