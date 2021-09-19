@@ -2,6 +2,7 @@ BP_TESTS_C = \
   hello_world           \
   bubblesort_demo       \
   streaming_accelerator_demo \
+  streaming_accelerator_loopback\
   streaming_accelerator_zipline\
   coherent_accelerator_demo\
   copy_example          \
