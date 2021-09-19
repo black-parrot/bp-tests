@@ -10,7 +10,7 @@ uint64_t main(uint64_t argc, char * argv[]) {
   uint64_t output_array [10];
   uint64_t wrod_count = 10;
   int i;
-  for(i = 0; i < wrod_count; ++i){
+  for(i = 0; i < wrod_count; i++){
     input_array[i] = i*16;
     output_array[i] = 0;
   }
@@ -20,30 +20,36 @@ uint64_t main(uint64_t argc, char * argv[]) {
   resp_ptr = (uint64_t *) &output_array;
   
   uint64_t bp_daddr_width = 33;
-
-  bp_call_loopback_accelerator (input_ptr, resp_ptr, wrod_count, bp_daddr_width);
+  uint64_t accel_write_cnt = 0;
+  accel_write_cnt = bp_call_loopback_accelerator (input_ptr, resp_ptr, wrod_count, bp_daddr_width);
 
 
   int err_cnt = 0;
-  for(i = 0; i < wrod_count; ++i){
+  for(i = 0; i < wrod_count; i++){
     if (input_array[i] != output_array[i])
       err_cnt++;
     else 
-      for(int j = 0; j < 16; ++j)
+      for(int j = 15; j >= 0; j--)
         bp_cprint(TO_HEX((uint8_t)((output_array[i]>>j*4) & 0x0F)));
     bp_cprint('\n');
   }
 
-  bp_cprint('E');
-  bp_cprint('R');
-  bp_cprint('R');
-  bp_cprint('C');
-  bp_cprint('N');
-  bp_cprint('T');
-  bp_cprint(':');
-  for(i = 0; i < 16;++i){      
+  char errcnt[7] = "ERRCNT:";
+  for(i = 0; i < 7; i++)
+    bp_cprint(errcnt[i]);
+  for(i = 15; i >= 0; i--){      
     bp_cprint(TO_HEX((uint8_t)((err_cnt>>i*4) & 0x0F)));
   }
+
+  bp_cprint('\n');
+  char wrcnt[6] = "WRCNT:";
+  for(i = 0; i < 6; i++)
+    bp_cprint(wrcnt[i]);
+  for(i = 15; i >= 0; i--){      
+    bp_cprint(TO_HEX((uint8_t)((accel_write_cnt>>i*4) & 0x0F)));
+  }
+
+  
 
   bp_finish(0);
   

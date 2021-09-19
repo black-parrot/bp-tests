@@ -27,7 +27,7 @@ uint64_t main(uint64_t argc, char * argv[]) {
   //type:1, streaming
   bp_call_vector_dot_product_accelerator(1, vdp_csr);
 
-  for(i = 0; i < 16;++i){      
+  for(i = 15; i >= 0; --i){      
     bp_cprint(TO_HEX((uint8_t)((resp_data>>i*4) & 0x0F)));
   }
 
