@@ -3,6 +3,7 @@ BP_TESTS_C = \
   bubblesort_demo       \
   streaming_accelerator_demo \
   streaming_accelerator_loopback\
+  accelerator_multicore_4_cfg\
   streaming_accelerator_zipline\
   coherent_accelerator_demo\
   copy_example          \
