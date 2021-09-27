@@ -5,12 +5,12 @@
 #define TO_HEX(i) (i <= 9 ? '0' + i : 'A' - 10 + i)
 
 uint64_t main(uint64_t argc, char * argv[]) {
-
+  
   uint64_t core_id;
   __asm__ volatile("csrr %0, mhartid": "=r"(core_id): :);   
 
-
   if (core_id == 0) {
+  
     uint64_t input_array [10];
     uint64_t output_array [10];
     uint64_t wrod_count = 10;
@@ -23,10 +23,9 @@ uint64_t main(uint64_t argc, char * argv[]) {
     uint64_t *input_ptr, *resp_ptr;
     input_ptr = (uint64_t *) &input_array;
     resp_ptr = (uint64_t *) &output_array;
-    
-    uint64_t bp_daddr_width = 33;
+  
     uint64_t accel_write_cnt = 0;
-    accel_write_cnt = bp_call_loopback_accelerator (input_ptr, resp_ptr, wrod_count, bp_daddr_width);
+    accel_write_cnt = bp_call_loopback_accelerator (input_ptr, resp_ptr, wrod_count);
 
     int err_cnt = 0;
     for(i = 0; i < wrod_count; i++){
@@ -53,9 +52,9 @@ uint64_t main(uint64_t argc, char * argv[]) {
       bp_cprint(TO_HEX((uint8_t)((accel_write_cnt>>i*4) & 0x0F)));
     }
   } 
-
-
+    
   if ((BP_CONFIG > 3) && (core_id == 3)){
+  
     uint8_t vlen;
     uint64_t input_array_a [8];
     uint64_t input_array_b [8];
