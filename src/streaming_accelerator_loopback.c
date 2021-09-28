@@ -19,9 +19,8 @@ uint64_t main(uint64_t argc, char * argv[]) {
   input_ptr = (uint64_t *) &input_array;
   resp_ptr = (uint64_t *) &output_array;
   
-  uint64_t bp_daddr_width = 33;
   uint64_t accel_write_cnt = 0;
-  accel_write_cnt = bp_call_loopback_accelerator (input_ptr, resp_ptr, wrod_count, bp_daddr_width);
+  accel_write_cnt = bp_call_loopback_accelerator (input_ptr, resp_ptr, wrod_count);
 
 
   int err_cnt = 0;
