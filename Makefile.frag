@@ -1,9 +1,12 @@
 BP_TESTS_C = \
   hello_world           \
   bubblesort_demo       \
-  streaming_accelerator_demo \
+  streaming_accelerator_vdp\
+  streaming_accelerator_loopback\
+  accelerator_vdp_multicore_4\
+  accelerator_loopback_multicore_4\
   streaming_accelerator_zipline\
-  coherent_accelerator_demo\
+  coherent_accelerator_vdp\
   copy_example          \
   mc_sanity             \
   mc_template           \
