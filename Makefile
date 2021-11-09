@@ -3,8 +3,8 @@ include Makefile.frag
 
 RISCV_GCC           = $(CROSS_COMPILE)gcc
 RISCV_GPP           = $(CROSS_COMPILE)g++
-RISCV_GCC_OPTS      = -march=rv64imafd -mabi=lp64 -mcmodel=medany -I$(BP_INCLUDE_DIR)
-RISCV_LINK_OPTS     = -T $(BP_LINKER_DIR)/riscv.ld -L$(BP_LIB_DIR) -Wl,--whole-archive -lperchbm -Wl,--no-whole-archive
+RISCV_GCC_OPTS      = -march=rv64imafd -mabi=lp64 -mcmodel=medany -I$(BP_SDK_INCLUDE_DIR)
+RISCV_LINK_OPTS     = -T$(BP_SDK_LINKER_DIR)/riscv.ld -L$(BP_SDK_LIB_DIR) -Wl,--whole-archive -lperchbm -Wl,--no-whole-archive
 
 .PHONY: all
 
@@ -28,18 +28,6 @@ paging.riscv: vm_start.S paging.c
 
 mapping.riscv: vm_start.S mapping.c
 	$(RISCV_GCC) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS) -nostartfiles
-
-mc_sanity_%.riscv: mc_sanity.c
-	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
-
-mc_template_%.riscv: mc_template.c
-	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
-
-mc_rand_walk_%.riscv: mc_rand_walk.c
-	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
-
-mc_work_share_sort_%.riscv: mc_work_share_sort.c
-	$(RISCV_GCC) -DNUM_CORES=$(notdir $*) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
 
 clean:
 	rm -f *.riscv
