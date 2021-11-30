@@ -32,6 +32,8 @@ BP_TESTS_C = \
   illegal_instruction   \
   unhandled_trap        \
   aviary_rom_test       \
+  misaligned_instructions_basic_jumps \
+  misaligned_instructions_advanced_jumps \
 
 BP_TESTS_CPP = \
   virtual               \
