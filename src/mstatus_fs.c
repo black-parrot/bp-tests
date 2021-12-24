@@ -40,8 +40,10 @@ void main(uint64_t argc, char * argv[]) {
    __asm__ __volatile__ ("frrm x0");
    // Test reading/writing fflags traps
    __asm__ __volatile__ ("frflags x0");
+   // Test writing fcsr
+   __asm__ __volatile__ ("csrw fcsr, %0" : : "r" (-1));
 
-   if (num_traps != 5)
+   if (num_traps != 6)
      bp_finish(1);
 
    bp_finish(0);
