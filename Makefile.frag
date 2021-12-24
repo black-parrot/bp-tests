@@ -32,6 +32,7 @@ BP_TESTS_C = \
   illegal_instruction   \
   unhandled_trap        \
   aviary_rom_test       \
+  readonly
 
 BP_TESTS_CPP = \
   virtual               \
