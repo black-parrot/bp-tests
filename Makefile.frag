@@ -32,7 +32,8 @@ BP_TESTS_C = \
   illegal_instruction   \
   unhandled_trap        \
   aviary_rom_test       \
-  readonly
+  readonly              \
+  epc					\
 
 BP_TESTS_CPP = \
   virtual               \
@@ -40,7 +41,7 @@ BP_TESTS_CPP = \
   template              \
   unwinding             \
   vector                \
-  map
+  map                   \
 
 BP_TESTS = $(BP_TESTS_C) $(BP_TESTS_CPP)
 
