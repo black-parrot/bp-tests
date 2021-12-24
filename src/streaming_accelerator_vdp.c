@@ -23,12 +23,27 @@ uint64_t main(uint64_t argc, char * argv[]) {
   vdp_csr.input_b_ptr = (uint64_t *) &input_array_b;
   vdp_csr.input_length = vlen;
   vdp_csr.resp_ptr =  (uint64_t *) &resp_data;
+  
+  uint64_t core_id;
+  __asm__ volatile("csrr %0, mhartid": "=r"(core_id): :);   
 
-  //type:1, streaming
-  bp_call_vector_dot_product_accelerator(1, vdp_csr);
 
-  for(i = 15; i >= 0; --i){      
-    bp_cprint(TO_HEX((uint8_t)((resp_data>>i*4) & 0x0F)));
+  if (core_id == 0) {
+    //type:1, streaming
+    bp_call_vector_dot_product_accelerator(1, vdp_csr);
+      for(i = 15; i >= 0; --i){      
+        bp_cprint(TO_HEX((uint8_t)((resp_data>>i*4) & 0x0F)));
+      }
+  } 
+  
+
+  if ((BP_CONFIG > 3) && (core_id == 3)){
+    //type:0, coherent
+    bp_call_vector_dot_product_accelerator(0, vdp_csr);
+
+    for(i = 15; i >= 0; --i){      
+      bp_cprint(TO_HEX((uint8_t)((resp_data>>i*4) & 0x0F)));
+    }
   }
 
   bp_finish(0);

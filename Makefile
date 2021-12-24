@@ -29,5 +29,18 @@ paging.riscv: vm_start.S paging.c
 mapping.riscv: vm_start.S mapping.c
 	$(RISCV_GCC) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS) -nostartfiles
 
+streaming_accelerator_loopback.riscv: streaming_accelerator_loopback.c vdp.c
+	$(RISCV_GCC) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
+
+streaming_accelerator_vdp.riscv: streaming_accelerator_vdp.c vdp.c
+	$(RISCV_GCC) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
+
+streaming_accelerator_zipline.riscv: streaming_accelerator_zipline.c vdp.c
+	$(RISCV_GCC) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
+
+coherent_accelerator_vdp.riscv: coherent_accelerator_vdp.c vdp.c
+	$(RISCV_GCC) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
+
 clean:
 	rm -f *.riscv
+
