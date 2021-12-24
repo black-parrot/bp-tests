@@ -2,10 +2,6 @@
 #include <stdint.h>
 #include "bp_utils.h"
 
-#ifndef N 
-#define N 100
-#endif
-
 long long test_gshare() {
     long long x = 0;
 
