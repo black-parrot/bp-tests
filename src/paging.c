@@ -1,5 +1,6 @@
 #include <string.h>
 #include "bp_utils.h"
+#include "encoding.h"
 #include "vm.h"
 
 #define NPT 4

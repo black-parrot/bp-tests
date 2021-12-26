@@ -1,19 +1,11 @@
 BP_TESTS_C = \
   hello_world           \
-  streaming_accelerator_vdp\
-  streaming_accelerator_loopback\
-  streaming_accelerator_zipline\
-  coherent_accelerator_vdp\
-  copy_example          \
-  mc_sanity             \
-  mc_template           \
-  mc_rand_walk          \
-  mc_work_share_sort    \
+  instr_coherence       \
   cache_hammer          \
   jalr_illegal          \
   satp_nofence          \
-  timer_interrupt_test  \
-  loop_test             \
+  timer_interrupt       \
+  loop                  \
   cache_flush           \
   stream_hammer         \
   domain_fault          \
@@ -21,16 +13,27 @@ BP_TESTS_C = \
   paging                \
   mapping               \
   mstatus_fs            \
-  wfi_test              \
-  uncached_mode_test    \
+  wfi                   \
+  uncached_mode         \
   amo_nonblocking       \
   amo_interrupt         \
   divide_hazard         \
-  illegal_instruction   \
   unhandled_trap        \
-  aviary_rom_test       \
+  aviary_rom            \
   readonly              \
-  epc					\
+  epc                   \
+
+BP_MULTICORE_TESTS_C = \
+  mc_sanity             \
+  mc_template           \
+  mc_rand_walk          \
+  mc_work_share_sort    \
+
+BP_ACCELERATOR_TESTS_C = \
+  streaming_accelerator_vdp      \
+  streaming_accelerator_loopback \
+  streaming_accelerator_zipline  \
+  coherent_accelerator_vdp       \
 
 BP_TESTS_CPP = \
   virtual               \

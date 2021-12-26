@@ -3,18 +3,18 @@
 
 // This test checks for uncached and cached accesses to the same address
 
-uint64_t *cfg_reg_dcache_mode = 0x200043;
-uint64_t *access_addr = 0x80000000;
-uint64_t *check_addr  = 0x80001060;
-uint64_t *check_addr2 = 0x80002060;
-uint64_t *check_addr3 = 0x80003060;
-uint64_t *check_addr4 = 0x80004060;
-uint64_t *check_addr5 = 0x80005060;
-uint64_t *check_addr6 = 0x80006060;
-uint64_t *check_addr7 = 0x80007060;
-uint64_t *check_addr8 = 0x80008060;
-uint64_t *check_addr9 = 0x80009060;
-uint64_t *uncached_addr = 0x40;
+uint64_t *cfg_reg_dcache_mode = (uint64_t *) 0x200404;
+uint64_t *access_addr         = (uint64_t *) 0x80000000;
+uint64_t *check_addr          = (uint64_t *) 0x80001060;
+uint64_t *check_addr2         = (uint64_t *) 0x80002060;
+uint64_t *check_addr3         = (uint64_t *) 0x80003060;
+uint64_t *check_addr4         = (uint64_t *) 0x80004060;
+uint64_t *check_addr5         = (uint64_t *) 0x80005060;
+uint64_t *check_addr6         = (uint64_t *) 0x80006060;
+uint64_t *check_addr7         = (uint64_t *) 0x80007060;
+uint64_t *check_addr8         = (uint64_t *) 0x80008060;
+uint64_t *check_addr9         = (uint64_t *) 0x80009060;
+uint64_t *uncached_addr       = (uint64_t *) 0x40;
 
 void main(uint64_t argc, char * argv[]) {
   int value = 0;

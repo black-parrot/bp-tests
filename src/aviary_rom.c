@@ -6,10 +6,16 @@
 //   BlackParrot environment. It is hardcoded to the default unicore configuration
 //   values, so it will need to change if these configuration values change
 int main(uint64_t argc, char * argv[]) {
-    if (bp_param_get(PARAM_MULTICORE) != 0) return -1;
+    // This one is assumed to pass so that we can use the result further down
+    //if (bp_param_get(PARAM_MULTICORE) != 0) return -1;
+    int multicore = bp_param_get(PARAM_MULTICORE);
     if (bp_param_get(PARAM_CC_X_DIM)  != 1) return -1;
     if (bp_param_get(PARAM_CC_Y_DIM)  != 1) return -1;
-    if (bp_param_get(PARAM_IC_Y_DIM)  != 1) return -1;
+    if (multicore) {
+        if (bp_param_get(PARAM_IC_Y_DIM) != 1) return -1;
+    } else {
+        if (bp_param_get(PARAM_IC_Y_DIM) != 0) return -1;
+    }
     if (bp_param_get(PARAM_MC_Y_DIM)  != 0) return -1;
     if (bp_param_get(PARAM_CAC_X_DIM) != 0) return -1;
     if (bp_param_get(PARAM_SAC_X_DIM) != 0) return -1;
@@ -46,15 +52,27 @@ int main(uint64_t argc, char * argv[]) {
     if (bp_param_get(PARAM_AMO_FETCH_ARITHMETIC) != 0) return -1;
 
     if (bp_param_get(PARAM_L1_WRITETHROUGH)    != 0  ) return -1;
-    if (bp_param_get(PARAM_L1_COHERENT)        != 0  ) return -1;
+    if (multicore) {
+        if (bp_param_get(PARAM_L1_COHERENT)        != 1  ) return -1;
+    } else {
+        if (bp_param_get(PARAM_L1_COHERENT)        != 0  ) return -1;
+    }
     if (bp_param_get(PARAM_DCACHE_SETS)        != 64 ) return -1;
     if (bp_param_get(PARAM_DCACHE_ASSOC)       != 8  ) return -1;
     if (bp_param_get(PARAM_DCACHE_BLOCK_WIDTH) != 512) return -1;
-    if (bp_param_get(PARAM_DCACHE_FILL_WIDTH)  != 64) return -1;
+    if (multicore) {
+        if (bp_param_get(PARAM_DCACHE_FILL_WIDTH)  != 512) return -1;
+    } else {
+        if (bp_param_get(PARAM_DCACHE_FILL_WIDTH)  != 64) return -1;
+    }
     if (bp_param_get(PARAM_ICACHE_SETS)        != 64 ) return -1;
     if (bp_param_get(PARAM_ICACHE_ASSOC)       != 8  ) return -1;
     if (bp_param_get(PARAM_ICACHE_BLOCK_WIDTH) != 512) return -1;
-    if (bp_param_get(PARAM_ICACHE_FILL_WIDTH)  != 64) return -1;
+    if (multicore) {
+        if (bp_param_get(PARAM_ICACHE_FILL_WIDTH)  != 512) return -1;
+    } else {
+        if (bp_param_get(PARAM_ICACHE_FILL_WIDTH)  != 64) return -1;
+    }
     if (bp_param_get(PARAM_ACACHE_SETS)        != 64 ) return -1;
     if (bp_param_get(PARAM_ACACHE_ASSOC)       != 8  ) return -1;
     if (bp_param_get(PARAM_ACACHE_BLOCK_WIDTH) != 512) return -1;

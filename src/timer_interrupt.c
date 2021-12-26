@@ -8,8 +8,8 @@
 #define NUM_INTERRUPTS 8
 
 uint8_t int_count = 48;
-uint64_t *mtimecmp = 0x304000;
-uint64_t *mtime = 0x30bff8;
+uint64_t *mtimecmp = (uint64_t *) 0x304000;
+uint64_t *mtime    = (uint64_t *) 0x30bff8;
 
 void pass() { bp_finish(0); }
 void fail() { bp_finish(1); }
@@ -41,7 +41,7 @@ void trap_success() {
 
 void main(uint64_t argc, char * argv[]) {
    uint64_t mie = (1 << 7) | (1 << 5) | (1 << 4); // M + S + U timer interrupt enable
-   uint64_t mstatus = (1 << 3) | (1 << 1) | (1 << 0); // Global interrupt enable
+   uint64_t mstatus = (3 << 13) | (1 << 3) | (1 << 1) | (1 << 0); // Global interrupt enable
    // Set up trap to alternate handler
    __asm__ __volatile__ ("csrw mtvec, %0": : "r" (&trap_success));
    // Setting up mtimecmp and mtime with some arbitrary values

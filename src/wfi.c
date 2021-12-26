@@ -7,8 +7,8 @@
 #include "bp_utils.h"
 
 uint8_t int_count = 48;
-uint64_t *mtimecmp = 0x304000;
-uint64_t *mtime = 0x30bff8;
+uint64_t *mtimecmp = (uint64_t *) 0x304000;
+uint64_t *mtime    = (uint64_t *) 0x30bff8;
 
 void pass() { bp_finish(0); }
 void fail() { bp_finish(1); }
