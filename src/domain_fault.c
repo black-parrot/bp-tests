@@ -7,9 +7,9 @@
  * For example: domain = 00001011 indicates domains 0, 1 and 3 are enabled
  */
 
-uint64_t *cfg_domain_reg_addr = 0x20001c;
-uint64_t *domain_4 = 0x2000000000;
-uint64_t *domain_6 = 0x8000000000;
+uint64_t *cfg_domain_reg_addr = (uint64_t *) 0x20001c;
+uint64_t *domain_4            = (uint64_t *) 0x2000000000;
+uint64_t *domain_6            = (uint64_t *) 0x8000000000;
 
 void trap_fail(){
   bp_finish(1);
