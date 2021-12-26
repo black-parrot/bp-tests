@@ -9,7 +9,8 @@ int main(uint64_t argc, char * argv[]) {
     if (bp_param_get(PARAM_MULTICORE) != 0) return -1;
     if (bp_param_get(PARAM_CC_X_DIM)  != 1) return -1;
     if (bp_param_get(PARAM_CC_Y_DIM)  != 1) return -1;
-    if (bp_param_get(PARAM_IC_Y_DIM)  != 1) return -1;
+    // Multicore has an I/O complex, unicore does not
+    if (bp_param_get(PARAM_IC_Y_DIM)  != bp_param_get(PARAM_MULTICORE)) return -1;
     if (bp_param_get(PARAM_MC_Y_DIM)  != 0) return -1;
     if (bp_param_get(PARAM_CAC_X_DIM) != 0) return -1;
     if (bp_param_get(PARAM_SAC_X_DIM) != 0) return -1;

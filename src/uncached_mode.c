@@ -3,7 +3,7 @@
 
 // This test checks for uncached and cached accesses to the same address
 
-uint64_t *cfg_reg_dcache_mode = 0x200043;
+uint64_t *cfg_reg_dcache_mode = 0x200404;
 uint64_t *access_addr = 0x80000000;
 uint64_t *check_addr  = 0x80001060;
 uint64_t *check_addr2 = 0x80002060;
