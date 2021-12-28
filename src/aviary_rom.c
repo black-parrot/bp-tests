@@ -47,9 +47,9 @@ int main(uint64_t argc, char * argv[]) {
     if (bp_param_get(PARAM_DTLB_ELS_1G) != 0) return -1;
 
     if (bp_param_get(PARAM_LR_SC)                != 1) return -1;
-    if (bp_param_get(PARAM_AMO_SWAP)             != 0) return -1;
-    if (bp_param_get(PARAM_AMO_FETCH_LOGIC)      != 0) return -1;
-    if (bp_param_get(PARAM_AMO_FETCH_ARITHMETIC) != 0) return -1;
+    if (bp_param_get(PARAM_AMO_SWAP)             != 1) return -1;
+    if (bp_param_get(PARAM_AMO_FETCH_LOGIC)      != 1) return -1;
+    if (bp_param_get(PARAM_AMO_FETCH_ARITHMETIC) != 1) return -1;
 
     if (bp_param_get(PARAM_L1_WRITETHROUGH)    != 0  ) return -1;
     if (multicore) {
