@@ -22,6 +22,7 @@ BP_TESTS_C = \
   aviary_rom            \
   readonly              \
   epc                   \
+  fflags_haz            \
 
 BP_MULTICORE_TESTS_C = \
   mc_sanity             \
