@@ -43,5 +43,5 @@ BP_TESTS_CPP = \
   vector                \
   map                   \
 
-BP_TESTS = $(BP_TESTS_C) $(BP_TESTS_CPP)
+BP_TESTS = $(BP_TESTS_C) $(BP_MULTICORE_TESTS_C) $(BP_ACCELERATOR_TESTS_C) $(BP_TESTS_CPP)
 
