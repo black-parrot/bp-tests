@@ -23,6 +23,7 @@ BP_TESTS_C = \
   readonly              \
   epc                   \
   fflags_haz            \
+  dram_stress           \
 
 BP_MULTICORE_TESTS_C = \
   mc_sanity             \
