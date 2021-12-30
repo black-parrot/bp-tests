@@ -185,21 +185,26 @@ void execute_and_expect_fault(uint64_t gadget_address, uint64_t expected_address
 }
 
 void execute_and_expect_success(uint64_t gadget_address) {
-  asm volatile ("li a0, 0");
 
   test_gadget_t gadget_fn = (test_gadget_t)gadget_address;
+  bp_hprint_uint64(gadget_address);
+  asm volatile ("li a0, 0"); // TODO: introduce a fake param instead?
   uint64_t result = gadget_fn();
   // "end" instruction sequence returns 0x42
   if (result != 0x42) {
     terminate(-1);
   }
+
+  if (latest_fault_info.present) {
+    terminate(-1);
+  }
 }
 
 void run_test() {
-  terminate(0); // temp
   latest_fault_info = (const struct fault_info_t){ 0 };
   execute_and_expect_success(test_0_tlb_miss_both_halves_gadget_address);
 
+  terminate(0); // temp
 }
 
 
@@ -227,7 +232,7 @@ void place_end_instructions(uint64_t vaddr) {
 int main(int argc, char** argv) {
 
   map_code_page();
-  map_cfg_page();
+  map_cfg_page(); // TODO: this might not be needed
 
   // // boot vector page stays where it is, to avoid managing a relocation
   // map_page(DRAM_BASE, DRAM_BASE, PAGE_SIZE_MEGAPAGE, PAGE_PERMS_ALL);
@@ -236,9 +241,9 @@ int main(int argc, char** argv) {
   // map_page(0, 0, PAGE_SIZE_MEGAPAGE, PAGE_PERMS_ALL);
   // // map_page(MPGSIZE, MPGSIZE, PAGE_SIZE_MEGAPAGE, PAGE_PERMS_ALL);
 
-  // // map_test_pair(0, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
-  // // place_dummy_instruction(test_0_tlb_miss_both_halves_gadget_address);
-  // // place_end_instructions(test_0_tlb_miss_both_halves_gadget_address+4);
+  map_test_pair(0, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
+  place_dummy_instruction(test_0_tlb_miss_both_halves_gadget_address);
+  place_end_instructions(test_0_tlb_miss_both_halves_gadget_address+4);
 
   init_vm();
 
