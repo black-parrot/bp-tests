@@ -10,10 +10,13 @@
 #define kpt  pt[3]
 
 // Address of start of the Nth "data page", an arbitrary range of 4k pages for testing use
-#define DATA_PAGE_VADDR(data_page_num) ((4 * MPGSIZE) + ((data_page_num) * PGSIZE))
-#define DATA_PAGE_VADDR_TO_PADDR(addr) ((addr) - (4 * MPGSIZE) + DRAM_BASE + MPGSIZE)
+// Intentionally _not_ the same VA as PA
+#define DATA_PAGE_VADDR(data_page_num) ((128 * MPGSIZE) + ((data_page_num) * PGSIZE))
+#define DATA_PAGE_VADDR_TO_PADDR(addr) ((addr) - (128 * MPGSIZE) + DRAM_BASE + MPGSIZE)
+
+#define TEST_PAGE_NUM_FOR_TEST_NUM(test_num) ((test_num)*2)
 // The address of the start of a fresh "data page", which can be used along with the one before it for this test
-#define TEST_BOUNDARY_VADDR(test_num) (DATA_PAGE_VADDR((test_num) * 2 + 1))
+#define TEST_BOUNDARY_VADDR(test_num) (DATA_PAGE_VADDR(TEST_PAGE_NUM_FOR_TEST_NUM(test_num) + 1))
 
 #define PAGE_SIZE_KILOPAGE 1
 #define PAGE_SIZE_MEGAPAGE 2
@@ -47,20 +50,44 @@ static const uint64_t test_0_tlb_miss_both_halves_gadget_address = TEST_BOUNDARY
 
 uint64_t pt[NPT][PTES_PER_PT] __attribute__((aligned(PGSIZE)));
 
-static void map_page(uint64_t va, uint64_t pa, uint64_t size, uint64_t leaf_perm) {
-    uint64_t aligned_va = (va/PGSIZE)*PGSIZE; // TODO: for consistency, align to actual requested size
-    uint64_t aligned_pa = (pa/PGSIZE)*PGSIZE;
+static void map_cfg_page() {
+  // The lowest virtual gigapage is mapped 1:1 to physical addresses for CFG registers
+  // Only the first two megapages are required, but gigapage requires fewer page tables
+
+    uint64_t aligned_va = 0;
+    uint64_t aligned_pa = 0;
+
+    l1pt[vpn2(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | PAGE_PERMS_ALL;;
+}
+
+static void map_code_page() {
+  // Megapage starting at DRAM_BASE is mapped 1:1 to physical addresses so that 
+
+    uint64_t aligned_va = DRAM_BASE;
+    uint64_t aligned_pa = DRAM_BASE;
 
     l1pt[vpn2(aligned_va)] = ((uint64_t)l2pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
-    if (size == PAGE_SIZE_KILOPAGE) {
-      l2pt[vpn1(aligned_va)] = ((uint64_t)l3pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
-      l3pt[vpn0(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | leaf_perm;
-    } else if (size == PAGE_SIZE_MEGAPAGE) {
-      l2pt[vpn1(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | leaf_perm;
-    } else {
-      bp_panic("unknown page size");
-    }
+    l2pt[vpn1(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | PAGE_PERMS_ALL;
 }
+
+
+static void map_test_page(uint64_t test_page_num, uint64_t leaf_perm) {
+    uint64_t aligned_va = DATA_PAGE_VADDR(test_page_num);
+    uint64_t aligned_pa = DATA_PAGE_VADDR_TO_PADDR(aligned_va);
+
+    l1pt[vpn2(aligned_va)] = ((uint64_t)l2pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
+    l2pt[vpn1(aligned_va)] = ((uint64_t)l3pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
+    l3pt[vpn0(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | leaf_perm;
+}
+
+
+    // bp_hprint_uint64(vpn2(aligned_va));
+    // bp_cprint('\n');
+    // bp_hprint_uint64(vpn1(aligned_va));
+    // bp_cprint('\n');
+    // bp_hprint_uint64(vpn0(aligned_va));
+    // bp_cprint('\n');
+    // bp_cprint('\n');
 
 // static void page_init(uint64_t addr) {
 //   // First virtual 4k page is allocated to the first 4k physical page
@@ -100,6 +127,8 @@ void handle_fault(uint64_t addr, int cause) {
   latest_fault_info.address = addr;
   latest_fault_info.cause = cause;
   latest_fault_info.present = true;
+
+  // TODO: don't continue?
 }
 
 void handle_trap(trapframe_t* tf) {
@@ -167,25 +196,17 @@ void execute_and_expect_success(uint64_t gadget_address) {
 }
 
 void run_test() {
-  asm volatile("nop");
-  asm volatile("nop");
-  asm volatile("nop");
-  asm volatile("nop");
-  asm volatile("nop");
-  asm volatile("nop");
-  asm volatile("nop");
-
+  terminate(0); // temp
   latest_fault_info = (const struct fault_info_t){ 0 };
   execute_and_expect_success(test_0_tlb_miss_both_halves_gadget_address);
 
-  bp_finish(0);
 }
 
 
 void map_test_pair(int test_num, uint64_t first_page_perms, uint64_t second_page_perms) {
-  uint64_t boundary_addr = TEST_BOUNDARY_VADDR(test_num);
-  map_page(0, boundary_addr - PGSIZE, PAGE_SIZE_KILOPAGE, first_page_perms);
-  map_page(0, boundary_addr, PAGE_SIZE_KILOPAGE, second_page_perms);
+  uint64_t first_page_num = TEST_PAGE_NUM_FOR_TEST_NUM(test_num);
+  map_test_page(first_page_num, first_page_perms);
+  map_test_page(first_page_num+1, second_page_perms);
 }
 
 void place_instruction(uint64_t vaddr, uint32_t instruction) {
@@ -205,16 +226,19 @@ void place_end_instructions(uint64_t vaddr) {
 
 int main(int argc, char** argv) {
 
-  // boot vector page stays where it is, to avoid managing a relocation
-  map_page(DRAM_BASE, DRAM_BASE, PAGE_SIZE_MEGAPAGE, PAGE_PERMS_ALL);
-  // first two megapages mapped 1:1 to make CSRs available at original locations
-  // TODO: following two break things
-  map_page(0, 0, PAGE_SIZE_MEGAPAGE, PAGE_PERMS_ALL);
-  // map_page(MPGSIZE, MPGSIZE, PAGE_SIZE_MEGAPAGE, PAGE_PERMS_ALL);
+  map_code_page();
+  map_cfg_page();
 
-  // map_test_pair(0, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
-  // place_dummy_instruction(test_0_tlb_miss_both_halves_gadget_address);
-  // place_end_instructions(test_0_tlb_miss_both_halves_gadget_address+4);
+  // // boot vector page stays where it is, to avoid managing a relocation
+  // map_page(DRAM_BASE, DRAM_BASE, PAGE_SIZE_MEGAPAGE, PAGE_PERMS_ALL);
+  // // first two megapages mapped 1:1 to make cfg regs available at original locations
+  // // TODO: following two break things
+  // map_page(0, 0, PAGE_SIZE_MEGAPAGE, PAGE_PERMS_ALL);
+  // // map_page(MPGSIZE, MPGSIZE, PAGE_SIZE_MEGAPAGE, PAGE_PERMS_ALL);
+
+  // // map_test_pair(0, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
+  // // place_dummy_instruction(test_0_tlb_miss_both_halves_gadget_address);
+  // // place_end_instructions(test_0_tlb_miss_both_halves_gadget_address+4);
 
   init_vm();
 
@@ -226,10 +250,12 @@ int main(int argc, char** argv) {
   // miss and fault on second half only
   // faults but pre-loaded
 
+  uint64_t stack_start = DRAM_BASE + MPGSIZE - 0x100;
+
   trapframe_t tf;
   memset(&tf, 0, sizeof(tf));
   tf.epc = (uint64_t)run_test;
-  tf.gpr[2] = PGSIZE - 0x100; // sp
+  tf.gpr[2] = stack_start; // sp
   pop_tf(&tf);
 
   return 99;
