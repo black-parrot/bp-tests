@@ -31,8 +31,10 @@ struct VDP_CSR
   uint64_t *tlv_header_ptr;
 };
 
-void bp_set_mmio_csr(uint64_t *accel_base_address, uint8_t csr_idx, uint64_t csr_value);
-uint64_t bp_get_mmio_csr(uint64_t *accel_base_address, uint8_t csr_idx); 
+void bp_set_mmio_csr64(uint64_t *accel_base_address, uint8_t csr_idx, uint64_t csr_value);
+uint64_t bp_get_mmio_csr64(uint64_t *accel_base_address, uint8_t csr_idx); 
+void bp_set_mmio_csr32(uint32_t *accel_base_address, uint8_t csr_idx, uint32_t csr_value);
+uint32_t bp_get_mmio_csr32(uint32_t *accel_base_address, uint8_t csr_idx); 
 void dma_cpy(uint64_t *src, uint64_t *dest, uint64_t length);
 void bp_hw_dma(uint64_t *cfg_base_dma_addr, uint64_t *src, uint64_t length, uint64_t type);
 void bp_vdp_config_accelerator(uint64_t *base_cfg_addr, uint64_t *input_a_ptr,
