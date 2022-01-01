@@ -24,6 +24,7 @@ BP_TESTS_C = \
   epc                   \
   fflags_haz            \
   dram_stress           \
+  misaligned_ldst       \
 
 BP_MULTICORE_TESTS_C = \
   mc_sanity             \
