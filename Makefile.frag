@@ -34,6 +34,7 @@ BP_MULTICORE_TESTS_C = \
   mc_template           \
   mc_rand_walk          \
   mc_work_share_sort    \
+  mc_amo_add            \
 
 BP_ACCELERATOR_TESTS_C = \
   streaming_accelerator_vdp      \
