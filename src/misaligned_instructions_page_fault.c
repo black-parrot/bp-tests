@@ -10,9 +10,9 @@
 #define kpt  pt[3]
 
 // Address of start of the Nth "data page", an arbitrary range of 4k pages for testing use
-// Intentionally _not_ the same VA as PA
-#define DATA_PAGE_VADDR(data_page_num) ((128 * MPGSIZE) + ((data_page_num) * PGSIZE))
-#define DATA_PAGE_VADDR_TO_PADDR(addr) ((addr) - (128 * MPGSIZE) + DRAM_BASE + MPGSIZE)
+// Intentionally _not_ the same VA as PA -- we apply an arbitrary 127-megapage offset.
+#define DATA_PAGE_VADDR(data_page_num) ((128 * MPGSIZE) + DRAM_BASE + ((data_page_num) * PGSIZE))
+#define DATA_PAGE_VADDR_TO_PADDR(addr) ((addr) - (128 * MPGSIZE) + MPGSIZE)
 
 #define TEST_PAGE_NUM_FOR_TEST_NUM(test_num) ((test_num)*2)
 // The address of the start of a fresh "data page", which can be used along with the one before it for this test
@@ -61,7 +61,8 @@ static void map_cfg_page() {
 }
 
 static void map_code_page() {
-  // Megapage starting at DRAM_BASE is mapped 1:1 to physical addresses so that 
+  // Megapage starting at DRAM_BASE is mapped 1:1 to physical addresses so that we don't have to
+  // handle a relocation
 
     uint64_t aligned_va = DRAM_BASE;
     uint64_t aligned_pa = DRAM_BASE;
@@ -74,6 +75,11 @@ static void map_code_page() {
 static void map_test_page(uint64_t test_page_num, uint64_t leaf_perm) {
     uint64_t aligned_va = DATA_PAGE_VADDR(test_page_num);
     uint64_t aligned_pa = DATA_PAGE_VADDR_TO_PADDR(aligned_va);
+
+    bp_hprint_uint64(aligned_va);
+    bp_cprint('\n');
+    bp_hprint_uint64(aligned_pa);
+    bp_cprint('\n');
 
     l1pt[vpn2(aligned_va)] = ((uint64_t)l2pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
     l2pt[vpn1(aligned_va)] = ((uint64_t)l3pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
@@ -176,6 +182,8 @@ void init_vm() {
     (1 << CAUSE_FETCH_PAGE_FAULT) |
     (1 << CAUSE_FETCH_ACCESS));
 
+  asm volatile ("sfence.vma");
+
   // fence to ensure the instruction writes take effect (unrelated to SATP)
   asm volatile ("fence.i");
 }
@@ -187,7 +195,7 @@ void execute_and_expect_fault(uint64_t gadget_address, uint64_t expected_address
 void execute_and_expect_success(uint64_t gadget_address) {
 
   test_gadget_t gadget_fn = (test_gadget_t)gadget_address;
-  bp_hprint_uint64(gadget_address);
+  // bp_hprint_uint64(gadget_address);
   asm volatile ("li a0, 0"); // TODO: introduce a fake param instead?
   uint64_t result = gadget_fn();
   // "end" instruction sequence returns 0x42
@@ -242,8 +250,11 @@ int main(int argc, char** argv) {
   // // map_page(MPGSIZE, MPGSIZE, PAGE_SIZE_MEGAPAGE, PAGE_PERMS_ALL);
 
   map_test_pair(0, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
-  place_dummy_instruction(test_0_tlb_miss_both_halves_gadget_address);
-  place_end_instructions(test_0_tlb_miss_both_halves_gadget_address+4);
+  // place_dummy_instruction(test_0_tlb_miss_both_halves_gadget_address);
+  // place_end_instructions(test_0_tlb_miss_both_halves_gadget_address+4);
+
+  bp_hprint_uint64(test_0_tlb_miss_both_halves_gadget_address);
+  bp_cprint('\n');
 
   init_vm();
 
