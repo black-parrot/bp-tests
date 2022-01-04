@@ -30,14 +30,6 @@ static void page_init(uint64_t addr) {
   l3pt[vpn0(addr)] = ((uint64_t)page_pa >> PGSHIFT << PTE_PPN_SHIFT) | PTE_U_LEAF; 
 }
 
-static void megapage_init(uint64_t addr) {
-  // Virtual megapages are mapped to the vpn1'th megapage
-  addr = (addr/MPGSIZE)*MPGSIZE;
-  uint64_t page_pa = DRAM_BASE + (MPGSIZE * vpn1(addr));
-  l1pt[vpn2(addr)] = ((uint64_t)kva2pa(l2pt) >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
-  l2pt[vpn1(addr)] = ((uint64_t)page_pa >> PGSHIFT << PTE_PPN_SHIFT) | PTE_U_LEAF;
-}
-
 static void gigapage_init(uint64_t addr) {
   // All virtual gigapage are mapped to the first gigapage
   addr = (addr/GPGSIZE)*GPGSIZE;

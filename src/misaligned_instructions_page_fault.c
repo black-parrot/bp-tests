@@ -46,7 +46,9 @@ void pop_tf(trapframe_t*);
 
 typedef uint64_t (*test_gadget_t)();
 
-static const uint64_t test_0_tlb_miss_both_halves_gadget_address = TEST_BOUNDARY_VADDR(0) - 2;
+// Sanity check
+static const uint64_t test_0_aligned_execution_across_page_boundary = TEST_BOUNDARY_VADDR(0) - 4;
+// static const uint64_t test_0_tlb_miss_both_halves_gadget_address = TEST_BOUNDARY_VADDR(0) - 2;
 
 uint64_t pt[NPT][PTES_PER_PT] __attribute__((aligned(PGSIZE)));
 
@@ -209,8 +211,12 @@ void execute_and_expect_success(uint64_t gadget_address) {
 }
 
 void run_test() {
+  bp_print_string("insn:\n");
+  bp_hprint_uint64(*((volatile uint64_t*)0x0000000090000ffc));
+  bp_cprint('\n');
+
   latest_fault_info = (const struct fault_info_t){ 0 };
-  execute_and_expect_success(test_0_tlb_miss_both_halves_gadget_address);
+  execute_and_expect_success(test_0_aligned_execution_across_page_boundary);
 
   terminate(0); // temp
 }
@@ -224,7 +230,14 @@ void map_test_pair(int test_num, uint64_t first_page_perms, uint64_t second_page
 
 void place_instruction(uint64_t vaddr, uint32_t instruction) {
   // TODO: do we allow misaligned stores?
-  *((uint64_t*)DATA_PAGE_VADDR_TO_PADDR(vaddr)) = instruction;
+  *((volatile uint64_t*)DATA_PAGE_VADDR_TO_PADDR(vaddr)) = instruction;
+  // uint32_t value = *((volatile uint64_t*)DATA_PAGE_VADDR_TO_PADDR(vaddr));
+  // if (value == instruction) {
+  //   bp_panic("good");
+  // } else {
+  //   bp_panic("bad");
+  // }
+  // *((uint64_t*)DATA_PAGE_VADDR_TO_PADDR(vaddr)) = instruction;
 }
 
 void place_dummy_instruction(uint64_t vaddr) {
@@ -232,7 +245,7 @@ void place_dummy_instruction(uint64_t vaddr) {
 }
 
 void place_end_instructions(uint64_t vaddr) {
-  place_instruction(vaddr,   0x04200513); // li	a0,0x42
+  place_instruction(vaddr,   0x04200513); // li a0,0x42
   place_instruction(vaddr+4, 0x00008067); // ret
 }
 
@@ -249,11 +262,21 @@ int main(int argc, char** argv) {
   // map_page(0, 0, PAGE_SIZE_MEGAPAGE, PAGE_PERMS_ALL);
   // // map_page(MPGSIZE, MPGSIZE, PAGE_SIZE_MEGAPAGE, PAGE_PERMS_ALL);
 
+  bp_print_string("gadget:\n");
+  bp_hprint_uint64(test_0_aligned_execution_across_page_boundary);
+  bp_cprint('\n');
+  bp_hprint_uint64(DATA_PAGE_VADDR_TO_PADDR(test_0_aligned_execution_across_page_boundary));
+  bp_cprint('\n');
+
   map_test_pair(0, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
+  place_dummy_instruction(test_0_aligned_execution_across_page_boundary);
+  place_end_instructions(test_0_aligned_execution_across_page_boundary+4);
+
+
   // place_dummy_instruction(test_0_tlb_miss_both_halves_gadget_address);
   // place_end_instructions(test_0_tlb_miss_both_halves_gadget_address+4);
 
-  bp_hprint_uint64(test_0_tlb_miss_both_halves_gadget_address);
+  bp_hprint_uint64(test_0_aligned_execution_across_page_boundary);
   bp_cprint('\n');
 
   init_vm();
