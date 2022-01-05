@@ -41,6 +41,9 @@ streaming_accelerator_zipline.riscv: streaming_accelerator_zipline.c vdp.c
 coherent_accelerator_vdp.riscv: coherent_accelerator_vdp.c vdp.c
 	$(RISCV_GCC) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS)
 
+misaligned_instructions_page_fault.riscv: vm_start.S misaligned_instructions_page_fault.c
+	$(RISCV_GCC) -o $@ $^ $(RISCV_GCC_OPTS) $(RISCV_LINK_OPTS) -nostartfiles
+
 clean:
 	rm -f *.riscv
 
