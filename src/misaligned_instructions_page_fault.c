@@ -174,6 +174,7 @@ void handle_trap(trapframe_t* tf) {
 // }
 
 void init_vm() {
+  asm volatile ("fence.i");
   // enable memory mappings
   uint64_t satp_val = ((uint64_t)l1pt >> PGSHIFT) | ((uint64_t)SATP_MODE_SV39 * (SATP_MODE & ~(SATP_MODE<<1)));
   write_csr(satp, satp_val);
@@ -185,6 +186,7 @@ void init_vm() {
     (1 << CAUSE_FETCH_ACCESS));
 
   asm volatile ("sfence.vma");
+  asm volatile ("fence");
 
   // fence to ensure the instruction writes take effect (unrelated to SATP)
   asm volatile ("fence.i");
@@ -214,6 +216,10 @@ void run_test() {
   bp_print_string("insn:\n");
   bp_hprint_uint64(*((volatile uint64_t*)0x0000000090000ffc));
   bp_cprint('\n');
+  bp_hprint_uint64(test_0_aligned_execution_across_page_boundary);
+  bp_cprint('\n');
+
+  asm volatile ("fence.i");
 
   latest_fault_info = (const struct fault_info_t){ 0 };
   execute_and_expect_success(test_0_aligned_execution_across_page_boundary);
@@ -271,6 +277,7 @@ int main(int argc, char** argv) {
   map_test_pair(0, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
   place_dummy_instruction(test_0_aligned_execution_across_page_boundary);
   place_end_instructions(test_0_aligned_execution_across_page_boundary+4);
+  asm volatile ("fence.i");
 
 
   // place_dummy_instruction(test_0_tlb_miss_both_halves_gadget_address);
