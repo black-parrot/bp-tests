@@ -30,6 +30,8 @@ BP_TESTS_C = \
   nanboxing             \
   misaligned_instructions_basic_jumps \
   misaligned_instructions_advanced_jumps \
+  misaligned_instructions_page_fault \
+  execute_dynamic_instruction \
 
 BP_MULTICORE_TESTS_C = \
   mc_sanity             \
