@@ -25,6 +25,7 @@ BP_TESTS_C = \
   fflags_haz            \
   dram_stress           \
   misaligned_ldst       \
+  nanboxing             \
 
 BP_MULTICORE_TESTS_C = \
   mc_sanity             \
