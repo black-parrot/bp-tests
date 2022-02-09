@@ -1,4 +1,6 @@
 BP_TESTS_C = \
+  m_external_interrupt  \
+  s_external_interrupt  \
   hello_world           \
   instr_coherence       \
   cache_hammer          \
