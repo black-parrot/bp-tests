@@ -7,8 +7,9 @@
 //   values, so it will need to change if these configuration values change
 int main(uint64_t argc, char * argv[]) {
     // This one is assumed to pass so that we can use the result further down
-    //if (bp_param_get(PARAM_MULTICORE) != 0) return -1;
-    int multicore = bp_param_get(PARAM_MULTICORE);
+    //if (bp_param_get(PARAM_CCE_TYPE)          != 0) return -1;
+    int multicore = (bp_param_get(PARAM_CCE_TYPE) != 0);
+
     if (bp_param_get(PARAM_CC_X_DIM)  != 1) return -1;
     if (bp_param_get(PARAM_CC_Y_DIM)  != 1) return -1;
     if (multicore) {
@@ -42,25 +43,15 @@ int main(uint64_t argc, char * argv[]) {
     if (bp_param_get(PARAM_GHIST_WIDTH)               != 2 ) return -1;
 
     if (bp_param_get(PARAM_ITLB_ELS_4K) != 8) return -1;
-    if (bp_param_get(PARAM_DTLB_ELS_4K) != 8) return -1;
     if (bp_param_get(PARAM_ITLB_ELS_1G) != 0) return -1;
+    if (bp_param_get(PARAM_DTLB_ELS_4K) != 8) return -1;
     if (bp_param_get(PARAM_DTLB_ELS_1G) != 0) return -1;
 
-    if (bp_param_get(PARAM_DCACHE_WRITETHROUGH) != 0  ) return -1;
-    if (bp_param_get(PARAM_DCACHE_AMO_SUPPORT)  != 15  ) return -1;
-    if (bp_param_get(PARAM_DCACHE_ASSOC)        != 8  ) return -1;
-    if (bp_param_get(PARAM_DCACHE_BLOCK_WIDTH)  != 512) return -1;
-    if (multicore) {
-        if (bp_param_get(PARAM_DCACHE_FILL_WIDTH) != 512) return -1;
-    } else {
-        if (bp_param_get(PARAM_DCACHE_FILL_WIDTH) != 64) return -1;
-    }
     if (multicore) {
         if (bp_param_get(PARAM_ICACHE_COHERENT) != 1  ) return -1;
     } else {
         if (bp_param_get(PARAM_ICACHE_COHERENT) != 0  ) return -1;
     }
-    if (bp_param_get(PARAM_DCACHE_SETS)        != 64 ) return -1;
     if (bp_param_get(PARAM_ICACHE_SETS)        != 64 ) return -1;
     if (bp_param_get(PARAM_ICACHE_ASSOC)       != 8  ) return -1;
     if (bp_param_get(PARAM_ICACHE_BLOCK_WIDTH) != 512) return -1;
@@ -69,6 +60,16 @@ int main(uint64_t argc, char * argv[]) {
     } else {
         if (bp_param_get(PARAM_ICACHE_FILL_WIDTH)  != 64) return -1;
     }
+    if (bp_param_get(PARAM_DCACHE_WRITETHROUGH) != 0  ) return -1;
+    if (bp_param_get(PARAM_DCACHE_AMO_SUPPORT)  != 15  ) return -1;
+    if (bp_param_get(PARAM_DCACHE_SETS)        != 64 ) return -1;
+    if (bp_param_get(PARAM_DCACHE_ASSOC)        != 8  ) return -1;
+    if (bp_param_get(PARAM_DCACHE_BLOCK_WIDTH)  != 512) return -1;
+    if (multicore) {
+        if (bp_param_get(PARAM_DCACHE_FILL_WIDTH) != 512) return -1;
+    } else {
+        if (bp_param_get(PARAM_DCACHE_FILL_WIDTH) != 64) return -1;
+    }
     if (bp_param_get(PARAM_ACACHE_AMO_SUPPORT) != 0  ) return -1;
     if (bp_param_get(PARAM_ACACHE_SETS)        != 64 ) return -1;
     if (bp_param_get(PARAM_ACACHE_ASSOC)       != 8  ) return -1;
@@ -76,6 +77,7 @@ int main(uint64_t argc, char * argv[]) {
     if (bp_param_get(PARAM_ACACHE_FILL_WIDTH)  != 64 ) return -1;
 
     if (bp_param_get(PARAM_L2_EN)               != 1  ) return -1;
+    if (bp_param_get(PARAM_L2_BANKS)            != 2  ) return -1;
     if (bp_param_get(PARAM_L2_AMO_SUPPORT)      != 14 ) return -1;
     if (bp_param_get(PARAM_L2_DATA_WIDTH)       != 64 ) return -1;
     if (bp_param_get(PARAM_L2_SETS)             != 128) return -1;
