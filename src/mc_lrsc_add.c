@@ -3,7 +3,7 @@
 #include <bp_utils.h>
 #include "mc_util.h"
 
-// N must be multiple of 100
+// number of iterations for each core to run the main loop
 #define N 500
 
 volatile uint64_t __attribute__((aligned(64))) global_lock = 0;
@@ -20,6 +20,8 @@ uint64_t main(uint64_t argc, char * argv[]) {
   uint64_t sc_load = 0;
   int i = 0;
 
+  // main loop
+  // Execute LR/SC that performs amo_add.d of 1 to amo_target
   __asm__ __volatile__ (
     "j .Lcheck%=;"
     ".Llrsc%=:;"
@@ -35,10 +37,12 @@ uint64_t main(uint64_t argc, char * argv[]) {
     :
     );
 
+  // all cores synchronize at end
   lock(&global_lock);
   end_barrier_mem += 1;
   unlock(&global_lock);
 
+  // core 0 checks if total in amo_target is equal to number of cores * N
   if (core_id == 0) {
     uint32_t num_cores = bp_param_get(PARAM_CC_X_DIM) * bp_param_get(PARAM_CC_Y_DIM);
     // core 0 waits for all threads to finish
@@ -47,6 +51,7 @@ uint64_t main(uint64_t argc, char * argv[]) {
     uint64_t total = num_cores * N;
     return (amo_target != total);
   } else {
+    // cores 1+ report pass and loop forever
     bp_finish(0);
     while (1) { }
   }
