@@ -8,7 +8,7 @@
 
 volatile uint64_t __attribute__((aligned(64))) global_lock = 0;
 volatile uint64_t __attribute__((aligned(64))) end_barrier_mem = 0;
-uint64_t amo_target __attribute__ ((aligned (16))) = 0;
+uint64_t amo_target __attribute__ ((aligned (64))) = 0;
 
 uint64_t main(uint64_t argc, char * argv[]) {
 
