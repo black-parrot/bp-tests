@@ -126,7 +126,7 @@ uint64_t bp_call_loopback_accelerator(uint64_t *input_ptr, uint64_t *resp_ptr, u
   dma_cpy(SACCEL_MEM_BASE, resp_ptr, len);
 
   uint64_t write_cnt = 0;
-  write_cnt = bp_get_mmio_csr64(SACCEL_VDP_BASE_ADDR, ACCEL_LOOPBACK_WR_CNT);
+  write_cnt = bp_get_mmio_csr64(SACCEL_MEM_BASE, ACCEL_LOOPBACK_WR_CNT);
 
   return write_cnt;
 } 
