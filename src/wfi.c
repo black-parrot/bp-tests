@@ -18,7 +18,7 @@ void trap_success() {
     __asm__ __volatile__ ("csrr %0, minstret" : "=r" (minstret));
 
     // Check if we've been retiring instrets in the loop
-    if (minstret > 1000) {
+    if (minstret > 5000) {
        bp_finish(1);
     }
 
