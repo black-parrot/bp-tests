@@ -32,9 +32,6 @@ int main(uint64_t argc, char * argv[]) {
     if (bp_param_get(PARAM_CADDR_WIDTH) != 32) return -1;
     if (bp_param_get(PARAM_ASID_WIDTH)  != 1 ) return -1;
 
-    if (bp_param_get(PARAM_BOOT_PC)       != 0x80000000) return -1;
-    if (bp_param_get(PARAM_BOOT_IN_DEBUG) != 0         ) return -1;
-
     if (bp_param_get(PARAM_BRANCH_METADATA_FWD_WIDTH) != 39) return -1;
     if (bp_param_get(PARAM_BTB_TAG_WIDTH)             != 9 ) return -1;
     if (bp_param_get(PARAM_BTB_IDX_WIDTH)             != 6 ) return -1;
