@@ -81,7 +81,7 @@ int main(uint64_t argc, char * argv[]) {
     if (bp_param_get(PARAM_L2_ASSOC)            != 8  ) return -1;
     if (bp_param_get(PARAM_L2_BLOCK_WIDTH)      != 512) return -1;
     if (bp_param_get(PARAM_L2_FILL_WIDTH)       != 64 ) return -1;
-    if (bp_param_get(PARAM_L2_OUTSTANDING_REQS) != 8  ) return -1;
+    if (bp_param_get(PARAM_L2_OUTSTANDING_REQS) != 6  ) return -1;
 
     if (bp_param_get(PARAM_FE_QUEUE_FIFO_ELS) != 8) return -1;
     if (bp_param_get(PARAM_FE_CMD_FIFO_ELS)   != 4) return -1;
