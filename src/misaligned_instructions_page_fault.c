@@ -36,8 +36,10 @@ typedef uint64_t (*test_gadget_t)();
 
 // Sanity check (fully aligned)
 static const uint64_t test_0_aligned_execution_across_page_boundary_gadget_address = TEST_BOUNDARY_VADDR(0) - 4;
+// Misaligned but entirely within a single page (confirm that misaligned execution with VM enabled works at all)
+static const uint64_t test_1_misaligned_within_single_page_gadget_address = TEST_BOUNDARY_VADDR(1) - 10;
 // Same as above, but now the first instruction is misaligned so it crosses the page boundary
-static const uint64_t test_1_tlb_miss_both_halves_gadget_address = TEST_BOUNDARY_VADDR(1) - 2;
+static const uint64_t test_2_tlb_miss_both_halves_gadget_address = TEST_BOUNDARY_VADDR(2) - 2;
 
 uint64_t pt[NPT][PTES_PER_PT] __attribute__((aligned(PGSIZE)));
 
@@ -127,6 +129,8 @@ void execute_and_expect_fault(uint64_t gadget_address, uint64_t expected_address
 }
 
 void execute_and_expect_success(uint64_t gadget_address) {
+  latest_fault_info = (const struct fault_info_t){ 0 };
+
   test_gadget_t gadget_fn = (test_gadget_t)gadget_address;
 
   bp_print_string("jumping to: ");
@@ -157,11 +161,9 @@ void run_test() {
   // TODO: yet another mindless fencei 
   asm volatile ("fence.i");
 
-  // latest_fault_info = (const struct fault_info_t){ 0 };
-  // execute_and_expect_success(test_0_aligned_execution_across_page_boundary_gadget_address);
-
-  latest_fault_info = (const struct fault_info_t){ 0 };
-  execute_and_expect_success(test_1_tlb_miss_both_halves_gadget_address);
+  execute_and_expect_success(test_0_aligned_execution_across_page_boundary_gadget_address);
+  execute_and_expect_success(test_1_misaligned_within_single_page_gadget_address);
+  // execute_and_expect_success(test_2_tlb_miss_both_halves_gadget_address);
 
   terminate(0); // temp
 }
@@ -204,16 +206,20 @@ int main(int argc, char** argv) {
   map_code_page();
   map_cfg_page(); // TODO: might not use
 
-  // map_test_pair(0, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
-  // place_dummy_instruction(test_0_aligned_execution_across_page_boundary_gadget_address);
-  // place_end_instructions(test_0_aligned_execution_across_page_boundary_gadget_address+4);
+  map_test_pair(0, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
+  place_dummy_instruction(test_0_aligned_execution_across_page_boundary_gadget_address);
+  place_end_instructions(test_0_aligned_execution_across_page_boundary_gadget_address+4);
+
+  map_test_pair(1, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
+  place_dummy_instruction(test_1_misaligned_within_single_page_gadget_address);
+  place_end_instructions(test_1_misaligned_within_single_page_gadget_address+4);
 
   // TODO: remove
   // asm volatile ("fence.i");
 
-  map_test_pair(1, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
-  place_dummy_instruction(test_1_tlb_miss_both_halves_gadget_address);
-  place_end_instructions(test_1_tlb_miss_both_halves_gadget_address+4);
+  // map_test_pair(2, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
+  // place_dummy_instruction(test_2_tlb_miss_both_halves_gadget_address);
+  // place_end_instructions(test_2_tlb_miss_both_halves_gadget_address+4);
 
   // bp_hprint_uint64(test_0_aligned_execution_across_page_boundary_gadget_address);
   // bp_cprint('\n');
