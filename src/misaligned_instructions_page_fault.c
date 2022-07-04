@@ -36,11 +36,12 @@ typedef uint64_t (*test_gadget_t)();
 
 // Sanity check (fully aligned)
 static const uint64_t test_0_aligned_execution_across_page_boundary_gadget_address = TEST_BOUNDARY_VADDR(0) - 4;
-// TODO: below comment doesn't match test. Separate into two tests.
 // Misaligned but entirely within a single page (confirm that misaligned execution with VM enabled works at all)
-static const uint64_t test_1_misaligned_within_single_page_gadget_address = TEST_BOUNDARY_VADDR(1) - 10;
-// Same as above, but now the first instruction is misaligned so it crosses the page boundary
-static const uint64_t test_2_tlb_miss_both_halves_gadget_address = TEST_BOUNDARY_VADDR(2) - 2;
+static const uint64_t test_1_misaligned_within_single_page_gadget_address = TEST_BOUNDARY_VADDR(1) - 14;
+// Misaligned instruction sequence with middle of three instructions spanning page boundary
+static const uint64_t test_2_misaligned_execution_across_page_boundary_gadget_address = TEST_BOUNDARY_VADDR(2) - 6;
+// Same as above, but now the first instruction is misaligned so it crosses the page boundary -- i.e., both halves miss
+static const uint64_t test_3_tlb_miss_both_halves_gadget_address = TEST_BOUNDARY_VADDR(3) - 2;
 
 uint64_t pt[NPT][PTES_PER_PT] __attribute__((aligned(PGSIZE)));
 
@@ -174,7 +175,8 @@ void run_test() {
 
   execute_and_expect_success(test_0_aligned_execution_across_page_boundary_gadget_address);
   execute_and_expect_success(test_1_misaligned_within_single_page_gadget_address);
-  // execute_and_expect_success(test_2_tlb_miss_both_halves_gadget_address);
+  execute_and_expect_success(test_2_misaligned_execution_across_page_boundary_gadget_address);
+  execute_and_expect_success(test_3_tlb_miss_both_halves_gadget_address);
 
   terminate(0); // temp
 }
@@ -223,6 +225,14 @@ int main(int argc, char** argv) {
   place_dummy_instruction(test_1_misaligned_within_single_page_gadget_address);
   place_end_instructions(test_1_misaligned_within_single_page_gadget_address+4);
 
+  map_test_pair(2, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
+  place_dummy_instruction(test_2_misaligned_execution_across_page_boundary_gadget_address);
+  place_end_instructions(test_2_misaligned_execution_across_page_boundary_gadget_address+4);
+
+  map_test_pair(3, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
+  place_dummy_instruction(test_3_tlb_miss_both_halves_gadget_address);
+  place_end_instructions(test_3_tlb_miss_both_halves_gadget_address+4);
+
   // TODO: jump directly to misaligned instruction on the page boundary
 
   // TODO: remove
@@ -244,6 +254,8 @@ int main(int argc, char** argv) {
   // miss and fault on first half only
   // miss and fault on second half only
   // faults but pre-loaded
+
+  // nonspec I$ with misses involved in the above
 
   uint64_t stack_start = DRAM_BASE + MPGSIZE - 0x100;
 
