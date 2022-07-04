@@ -2,6 +2,8 @@
 #include "bp_utils.h"
 #include "vm.h"
 
+volatile uint32_t *cfg_reg_icache_mode = (volatile uint32_t *) 0x200204;
+
 #define NPT 4
 #define l1pt pt[0]
 #define l2pt pt[1]
@@ -22,12 +24,18 @@
 #define PAGE_SIZE_MEGAPAGE 2
 
 #define PAGE_PERMS_ALL PTE_U_LEAF
+#define PAGE_PERMS_NOEXEC 0
+//(PAGE_PERMS_ALL & ~(uint64_t)PTE_X & ~(uint64_t)PTE_R & ~(uint64_t)PTE_W & ~(uint64_t)PTE_V)
+
+#define FAULT_MAGIC 0x8BADF00D
 
 struct fault_info_t {
-  uint64_t address;
+  uint64_t pc;
+  uint64_t tval;
   uint64_t cause;
   bool present;
 } latest_fault_info;
+bool test_active = false;
 
 void trap_entry();
 void pop_tf(trapframe_t*);
@@ -45,8 +53,14 @@ static const uint64_t test_3_tlb_miss_both_halves_gadget_address = TEST_BOUNDARY
 // Executing misaligned instruction spanning page boundary, but second half is in ITLB and I$ while first isn't
 static const uint64_t test_4_tlb_miss_first_half_only_primary_gadget_address = TEST_BOUNDARY_VADDR(4) - 6;
 static const uint64_t test_4_tlb_miss_first_half_only_secondary_gadget_address = TEST_BOUNDARY_VADDR(4) + 16;
+// Misaligned, entirely within a single page, and page is marked as non-executable.
+static const uint64_t test_5_access_fault_within_single_page = TEST_BOUNDARY_VADDR(5) - 14;
 
 uint64_t pt[NPT][PTES_PER_PT] __attribute__((aligned(PGSIZE)));
+
+uint64_t userspace_trap_return_trampoline() {
+  return FAULT_MAGIC;
+}
 
 static void map_cfg_page() {
   // The lowest virtual gigapage is mapped 1:1 to physical addresses for CFG registers
@@ -74,36 +88,44 @@ static void map_test_page(uint64_t test_page_num, uint64_t leaf_perm) {
     uint64_t aligned_va = DATA_PAGE_VADDR(test_page_num);
     uint64_t aligned_pa = DATA_PAGE_VADDR_TO_PADDR(aligned_va);
 
-    bp_hprint_uint64(aligned_va);
-    bp_cprint('\n');
+    // bp_hprint_uint64(aligned_va);
+    // bp_cprint('\n');
 
-    bp_hprint_uint64(aligned_pa);
-    bp_cprint('\n');
-    bp_cprint('\n');
+    // bp_hprint_uint64(aligned_pa);
+    // bp_cprint('\n');
+    // bp_cprint('\n');
 
     l1pt[vpn2(aligned_va)] = ((uint64_t)l2pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
     l2pt[vpn1(aligned_va)] = ((uint64_t)l3pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
     l3pt[vpn0(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | leaf_perm;
 }
 
-void handle_fault(uint64_t addr, int cause) {
-  if (latest_fault_info.present) {
+void handle_fault(trapframe_t* tf) {
+  if (!test_active) {
+    bp_print_string("Fault occurred while no test active, aborting...\n");
     terminate(-1);
     while (1);
   }
 
-  latest_fault_info.address = addr;
-  latest_fault_info.cause = cause;
+  if (latest_fault_info.present) {
+    bp_print_string("Second fault occurred during test, aborting...\n");
+    terminate(-1);
+    while (1);
+  }
+
+  latest_fault_info.pc = tf->epc;
+  latest_fault_info.tval = tf->badvaddr;
+  latest_fault_info.cause = tf->cause;
   latest_fault_info.present = true;
 
-  // TODO: modify target pc to return to the "test finished" handler
-  // Temp
-  terminate(55);
+  bp_print_string("returning");
+  tf->epc = (uint64_t)&userspace_trap_return_trampoline;
 }
 
 void handle_trap(trapframe_t* tf) {
+  bp_print_string("trap\n");
   if (tf->cause == CAUSE_FETCH_PAGE_FAULT || tf->cause == CAUSE_FETCH_ACCESS)
-    handle_fault(tf->badvaddr, tf->cause);
+    handle_fault(tf);
   else
     terminate(-1);
 
@@ -129,12 +151,9 @@ void init_vm() {
   asm volatile ("fence.i");
 }
 
-void execute_and_expect_fault(uint64_t gadget_address, uint64_t expected_address, uint64_t expected_cause) {
-  // TODO
-}
-
-void execute_and_expect_success(uint64_t gadget_address) {
+void execute_and_expect_fault(uint64_t gadget_address, uint64_t expected_address, uint64_t expected_cause, uint64_t expected_val) {
   latest_fault_info = (const struct fault_info_t){ 0 };
+  test_active = false;
 
   test_gadget_t gadget_fn = (test_gadget_t)gadget_address;
 
@@ -142,12 +161,14 @@ void execute_and_expect_success(uint64_t gadget_address) {
   bp_hprint_uint64((uint64_t)gadget_fn);
   bp_cprint('\n');
 
-  asm volatile ("li a0, 0"); // TODO: introduce a fake param instead?
+  test_active = true;
+  asm volatile ("li a0, 0");
   uint64_t result = gadget_fn();
-  // "end" instruction sequence returns 0x42
+  test_active = false;
   bp_print_string("result: ");
   bp_hprint_uint64(result);
 
+  // "end" instruction sequence returns 0x42
   if (result == 0x42) {
     bp_print_string(" (pass)\n");
   } else {
@@ -157,7 +178,42 @@ void execute_and_expect_success(uint64_t gadget_address) {
 
   if (latest_fault_info.present) {
     bp_print_string("unexpected fault:\n\taddress: ");
-    bp_hprint_uint64(latest_fault_info.address);
+    bp_hprint_uint64(latest_fault_info.pc);
+    bp_print_string("\n\tcause: ");
+    bp_hprint_uint64(latest_fault_info.cause);
+    bp_cprint('\n');
+    terminate(-1);
+  }
+}
+
+void execute_and_expect_success(uint64_t gadget_address) {
+  latest_fault_info = (const struct fault_info_t){ 0 };
+  test_active = false;
+
+  test_gadget_t gadget_fn = (test_gadget_t)gadget_address;
+
+  bp_print_string("jumping to: ");
+  bp_hprint_uint64((uint64_t)gadget_fn);
+  bp_cprint('\n');
+
+  test_active = true;
+  asm volatile ("li a0, 0");
+  uint64_t result = gadget_fn();
+  test_active = false;
+  bp_print_string("result: ");
+  bp_hprint_uint64(result);
+
+  // "end" instruction sequence returns 0x42
+  if (result == 0x42) {
+    bp_print_string(" (pass)\n");
+  } else {
+    bp_print_string(" (fail)\n");
+    terminate(-1);
+  }
+
+  if (latest_fault_info.present) {
+    bp_print_string("unexpected fault:\n\tepc: ");
+    bp_hprint_uint64(latest_fault_info.pc);
     bp_print_string("\n\tcause: ");
     bp_hprint_uint64(latest_fault_info.cause);
     bp_cprint('\n');
@@ -176,14 +232,18 @@ void run_test() {
   // TODO: yet another mindless fencei 
   asm volatile ("fence.i");
 
-  execute_and_expect_success(test_0_aligned_execution_across_page_boundary_gadget_address);
-  execute_and_expect_success(test_1_misaligned_within_single_page_gadget_address);
-  execute_and_expect_success(test_2_misaligned_execution_across_page_boundary_gadget_address);
-  execute_and_expect_success(test_3_tlb_miss_both_halves_gadget_address);
+  // execute_and_expect_success(test_0_aligned_execution_across_page_boundary_gadget_address);
+  // execute_and_expect_success(test_1_misaligned_within_single_page_gadget_address);
+  // execute_and_expect_success(test_2_misaligned_execution_across_page_boundary_gadget_address);
+  // execute_and_expect_success(test_3_tlb_miss_both_halves_gadget_address);
   // Execute test 4 "secondary" gadget first to prime ITLB and I$
-  execute_and_expect_success(test_4_tlb_miss_first_half_only_secondary_gadget_address);
-  execute_and_expect_success(test_4_tlb_miss_first_half_only_primary_gadget_address);
+  // execute_and_expect_success(test_4_tlb_miss_first_half_only_secondary_gadget_address);
+  // execute_and_expect_success(test_4_tlb_miss_first_half_only_primary_gadget_address);
 
+  execute_and_expect_success(test_5_access_fault_within_single_page);
+  // execute_and_expect_fault(test_5_access_fault_within_single_page, test_5_access_fault_within_single_page, CAUSE_FETCH_ACCESS, test_5_access_fault_within_single_page);
+
+  // TODO
   terminate(0); // temp
 }
 
@@ -244,11 +304,19 @@ int main(int argc, char** argv) {
   place_end_instructions(test_4_tlb_miss_first_half_only_primary_gadget_address+4);
   place_end_instructions(test_4_tlb_miss_first_half_only_secondary_gadget_address);
 
+  map_test_pair(5, PAGE_PERMS_NOEXEC, PAGE_PERMS_ALL);
+  place_dummy_instruction(test_5_access_fault_within_single_page);
+  place_end_instructions(test_5_access_fault_within_single_page+4);
+
   init_vm();
+
+  // TODO: run tests twice, once default and once with nonspec I$
+  flush_tlb();
+  *cfg_reg_icache_mode = 2;
 
   // x TLB miss both halves
   // x TLB miss second half only
-  // TLB miss first half only
+  // x TLB miss first half only
   // miss and fault on both halves
   // miss and fault on first half only
   // miss and fault on second half only
