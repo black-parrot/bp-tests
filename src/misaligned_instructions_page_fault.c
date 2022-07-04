@@ -42,6 +42,9 @@ static const uint64_t test_1_misaligned_within_single_page_gadget_address = TEST
 static const uint64_t test_2_misaligned_execution_across_page_boundary_gadget_address = TEST_BOUNDARY_VADDR(2) - 6;
 // Same as above, but now the first instruction is misaligned so it crosses the page boundary -- i.e., both halves miss
 static const uint64_t test_3_tlb_miss_both_halves_gadget_address = TEST_BOUNDARY_VADDR(3) - 2;
+// Executing misaligned instruction spanning page boundary, but second half is in ITLB and I$ while first isn't
+static const uint64_t test_4_tlb_miss_first_half_only_primary_gadget_address = TEST_BOUNDARY_VADDR(4) - 6;
+static const uint64_t test_4_tlb_miss_first_half_only_secondary_gadget_address = TEST_BOUNDARY_VADDR(4) + 16;
 
 uint64_t pt[NPT][PTES_PER_PT] __attribute__((aligned(PGSIZE)));
 
@@ -177,6 +180,9 @@ void run_test() {
   execute_and_expect_success(test_1_misaligned_within_single_page_gadget_address);
   execute_and_expect_success(test_2_misaligned_execution_across_page_boundary_gadget_address);
   execute_and_expect_success(test_3_tlb_miss_both_halves_gadget_address);
+  // Execute test 4 "secondary" gadget first to prime ITLB and I$
+  execute_and_expect_success(test_4_tlb_miss_first_half_only_secondary_gadget_address);
+  execute_and_expect_success(test_4_tlb_miss_first_half_only_primary_gadget_address);
 
   terminate(0); // temp
 }
@@ -232,6 +238,11 @@ int main(int argc, char** argv) {
   map_test_pair(3, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
   place_dummy_instruction(test_3_tlb_miss_both_halves_gadget_address);
   place_end_instructions(test_3_tlb_miss_both_halves_gadget_address+4);
+
+  map_test_pair(4, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
+  place_dummy_instruction(test_4_tlb_miss_first_half_only_primary_gadget_address);
+  place_end_instructions(test_4_tlb_miss_first_half_only_primary_gadget_address+4);
+  place_end_instructions(test_4_tlb_miss_first_half_only_secondary_gadget_address);
 
   init_vm();
 
