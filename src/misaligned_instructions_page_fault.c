@@ -140,12 +140,22 @@ void execute_and_expect_success(uint64_t gadget_address) {
   asm volatile ("li a0, 0"); // TODO: introduce a fake param instead?
   uint64_t result = gadget_fn();
   // "end" instruction sequence returns 0x42
+  bp_print_string("result: ");
   bp_hprint_uint64(result);
-  if (result != 0x42) {
+
+  if (result == 0x42) {
+    bp_print_string(" (pass)\n");
+  } else {
+    bp_print_string(" (fail)\n");
     terminate(-1);
   }
 
   if (latest_fault_info.present) {
+    bp_print_string("unexpected fault:\n\taddress: ");
+    bp_hprint_uint64(latest_fault_info.address);
+    bp_print_string("\n\tcause: ");
+    bp_hprint_uint64(latest_fault_info.cause);
+    bp_cprint('\n');
     terminate(-1);
   }
 }
@@ -213,6 +223,8 @@ int main(int argc, char** argv) {
   map_test_pair(1, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
   place_dummy_instruction(test_1_misaligned_within_single_page_gadget_address);
   place_end_instructions(test_1_misaligned_within_single_page_gadget_address+4);
+
+  // TODO: jump directly to misaligned instruction on the page boundary
 
   // TODO: remove
   // asm volatile ("fence.i");
