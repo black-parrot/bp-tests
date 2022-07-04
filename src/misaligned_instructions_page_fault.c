@@ -36,6 +36,7 @@ typedef uint64_t (*test_gadget_t)();
 
 // Sanity check (fully aligned)
 static const uint64_t test_0_aligned_execution_across_page_boundary_gadget_address = TEST_BOUNDARY_VADDR(0) - 4;
+// TODO: below comment doesn't match test. Separate into two tests.
 // Misaligned but entirely within a single page (confirm that misaligned execution with VM enabled works at all)
 static const uint64_t test_1_misaligned_within_single_page_gadget_address = TEST_BOUNDARY_VADDR(1) - 10;
 // Same as above, but now the first instruction is misaligned so it crosses the page boundary
@@ -186,11 +187,9 @@ void map_test_pair(int test_num, uint64_t first_page_perms, uint64_t second_page
 }
 
 void place_instruction(uint64_t vaddr, uint32_t instruction) {
-  // TODO: misaligned store won't work
-  volatile uint32_t* target = ((volatile uint32_t*)DATA_PAGE_VADDR_TO_PADDR(vaddr));
-  if (vaddr % 4 == 0) {
-    *target = instruction;
-  } else if (vaddr % 4 == 2) {
+  if (vaddr % 2 == 0) {
+    // Decompose into aligned writes
+    volatile void* target = ((volatile void*)DATA_PAGE_VADDR_TO_PADDR(vaddr));
     volatile uint16_t* target_lower = target;
     volatile uint16_t* target_upper = target + 2;
 
