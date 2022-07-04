@@ -20,9 +20,6 @@ volatile uint32_t *cfg_reg_icache_mode = (volatile uint32_t *) 0x200204;
 // The address of the start of a fresh "data page", which can be used along with the one before it for this test
 #define TEST_BOUNDARY_VADDR(test_num) (DATA_PAGE_VADDR(TEST_PAGE_NUM_FOR_TEST_NUM(test_num) + 1))
 
-#define PAGE_SIZE_KILOPAGE 1
-#define PAGE_SIZE_MEGAPAGE 2
-
 #define PAGE_PERMS_ALL PTE_U_LEAF
 #define PAGE_PERMS_NOEXEC 0
 //(PAGE_PERMS_ALL & ~(uint64_t)PTE_X & ~(uint64_t)PTE_R & ~(uint64_t)PTE_W & ~(uint64_t)PTE_V)
@@ -56,7 +53,7 @@ static const uint64_t test_4_tlb_miss_first_half_only_secondary_gadget_address =
 // Misaligned, entirely within a single page, and page is marked as non-executable.
 static const uint64_t test_5_access_fault_within_single_page = TEST_BOUNDARY_VADDR(5) - 14;
 
-uint64_t pt[NPT][PTES_PER_PT] __attribute__((aligned(PGSIZE)));
+uint64_t pt[NPT][PTES_PER_PT] __attribute__((aligned(PGSIZE))) = {0};
 
 uint64_t userspace_trap_return_trampoline() {
   return FAULT_MAGIC;
@@ -69,6 +66,8 @@ static void map_cfg_page() {
     uint64_t aligned_va = 0;
     uint64_t aligned_pa = 0;
 
+    bp_hprint_uint64(vpn2(aligned_va));
+    bp_print_string(" cfg\n");
     l1pt[vpn2(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | PAGE_PERMS_ALL;;
 }
 
@@ -79,6 +78,8 @@ static void map_code_page() {
     uint64_t aligned_va = DRAM_BASE;
     uint64_t aligned_pa = DRAM_BASE;
 
+    bp_hprint_uint64(vpn2(aligned_va));
+    bp_print_string(" code\n");
     l1pt[vpn2(aligned_va)] = ((uint64_t)l2pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
     l2pt[vpn1(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | PAGE_PERMS_ALL;
 }
@@ -95,6 +96,8 @@ static void map_test_page(uint64_t test_page_num, uint64_t leaf_perm) {
     // bp_cprint('\n');
     // bp_cprint('\n');
 
+    bp_hprint_uint64(vpn2(aligned_va));
+    bp_print_string(" test\n");
     l1pt[vpn2(aligned_va)] = ((uint64_t)l2pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
     l2pt[vpn1(aligned_va)] = ((uint64_t)l3pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
     l3pt[vpn0(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | leaf_perm;
@@ -287,26 +290,26 @@ int main(int argc, char** argv) {
   place_dummy_instruction(test_0_aligned_execution_across_page_boundary_gadget_address);
   place_end_instructions(test_0_aligned_execution_across_page_boundary_gadget_address+4);
 
-  map_test_pair(1, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
-  place_dummy_instruction(test_1_misaligned_within_single_page_gadget_address);
-  place_end_instructions(test_1_misaligned_within_single_page_gadget_address+4);
+  // map_test_pair(1, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
+  // place_dummy_instruction(test_1_misaligned_within_single_page_gadget_address);
+  // place_end_instructions(test_1_misaligned_within_single_page_gadget_address+4);
 
-  map_test_pair(2, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
-  place_dummy_instruction(test_2_misaligned_execution_across_page_boundary_gadget_address);
-  place_end_instructions(test_2_misaligned_execution_across_page_boundary_gadget_address+4);
+  // map_test_pair(2, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
+  // place_dummy_instruction(test_2_misaligned_execution_across_page_boundary_gadget_address);
+  // place_end_instructions(test_2_misaligned_execution_across_page_boundary_gadget_address+4);
 
-  map_test_pair(3, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
-  place_dummy_instruction(test_3_tlb_miss_both_halves_gadget_address);
-  place_end_instructions(test_3_tlb_miss_both_halves_gadget_address+4);
+  // map_test_pair(3, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
+  // place_dummy_instruction(test_3_tlb_miss_both_halves_gadget_address);
+  // place_end_instructions(test_3_tlb_miss_both_halves_gadget_address+4);
 
-  map_test_pair(4, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
-  place_dummy_instruction(test_4_tlb_miss_first_half_only_primary_gadget_address);
-  place_end_instructions(test_4_tlb_miss_first_half_only_primary_gadget_address+4);
-  place_end_instructions(test_4_tlb_miss_first_half_only_secondary_gadget_address);
+  // map_test_pair(4, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
+  // place_dummy_instruction(test_4_tlb_miss_first_half_only_primary_gadget_address);
+  // place_end_instructions(test_4_tlb_miss_first_half_only_primary_gadget_address+4);
+  // place_end_instructions(test_4_tlb_miss_first_half_only_secondary_gadget_address);
 
-  map_test_pair(5, PAGE_PERMS_NOEXEC, PAGE_PERMS_ALL);
-  place_dummy_instruction(test_5_access_fault_within_single_page);
-  place_end_instructions(test_5_access_fault_within_single_page+4);
+  // map_test_pair(5, PAGE_PERMS_NOEXEC, PAGE_PERMS_ALL);
+  // place_dummy_instruction(test_5_access_fault_within_single_page);
+  // place_end_instructions(test_5_access_fault_within_single_page+4);
 
   init_vm();
 
