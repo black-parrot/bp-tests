@@ -233,22 +233,10 @@ int main(int argc, char** argv) {
   place_dummy_instruction(test_3_tlb_miss_both_halves_gadget_address);
   place_end_instructions(test_3_tlb_miss_both_halves_gadget_address+4);
 
-  // TODO: jump directly to misaligned instruction on the page boundary
-
-  // TODO: remove
-  // asm volatile ("fence.i");
-
-  // map_test_pair(2, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
-  // place_dummy_instruction(test_2_tlb_miss_both_halves_gadget_address);
-  // place_end_instructions(test_2_tlb_miss_both_halves_gadget_address+4);
-
-  // bp_hprint_uint64(test_0_aligned_execution_across_page_boundary_gadget_address);
-  // bp_cprint('\n');
-
   init_vm();
 
-  // TLB miss both halves
-  // TLB miss second half only
+  // x TLB miss both halves
+  // x TLB miss second half only
   // TLB miss first half only
   // miss and fault on both halves
   // miss and fault on first half only
