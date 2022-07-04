@@ -30,9 +30,9 @@
 
 #define DRAM_BASE      0x80000000
 
-#define vpn0(va) ((va >> PGSHIFT) % PTES_PER_PT)
-#define vpn1(va) ((va >> (PGSHIFT + PGLEVELBITS)) % PTES_PER_PT)
-#define vpn2(va) ((va >> (PGSHIFT + 2*PGLEVELBITS)) % PTES_PER_PT)
+#define vpn0(va) (((va) >> PGSHIFT) % PTES_PER_PT)
+#define vpn1(va) (((va) >> (PGSHIFT + PGLEVELBITS)) % PTES_PER_PT)
+#define vpn2(va) (((va) >> (PGSHIFT + 2*PGLEVELBITS)) % PTES_PER_PT)
 
 #define flush_tlb() asm volatile ("sfence.vma")
 

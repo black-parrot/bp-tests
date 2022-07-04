@@ -20,9 +20,12 @@ volatile uint32_t *cfg_reg_icache_mode = (volatile uint32_t *) 0x200204;
 // The address of the start of a fresh "data page", which can be used along with the one before it for this test
 #define TEST_BOUNDARY_VADDR(test_num) (DATA_PAGE_VADDR(TEST_PAGE_NUM_FOR_TEST_NUM(test_num) + 1))
 
-#define PAGE_PERMS_ALL PTE_U_LEAF
-#define PAGE_PERMS_NOEXEC 0
-//(PAGE_PERMS_ALL & ~(uint64_t)PTE_X & ~(uint64_t)PTE_R & ~(uint64_t)PTE_W & ~(uint64_t)PTE_V)
+#define UMODE_TO_SMODE_CODE_OFFSET MPGSIZE
+
+#define PAGE_PERMS_USER_ALL PTE_U_LEAF
+#define PAGE_PERMS_SUPERVISOR_ALL PTE_S_LEAF
+#define PAGE_PERMS_USER_NOEXEC 0
+//(PAGE_PERMS_USER_ALL & ~(uint64_t)PTE_X & ~(uint64_t)PTE_R & ~(uint64_t)PTE_W & ~(uint64_t)PTE_V)
 
 #define FAULT_MAGIC 0x8BADF00D
 
@@ -56,6 +59,7 @@ static const uint64_t test_5_access_fault_within_single_page = TEST_BOUNDARY_VAD
 uint64_t pt[NPT][PTES_PER_PT] __attribute__((aligned(PGSIZE))) = {0};
 
 uint64_t userspace_trap_return_trampoline() {
+  bp_print_string("tramp\n");
   return FAULT_MAGIC;
 }
 
@@ -68,7 +72,7 @@ static void map_cfg_page() {
 
     bp_hprint_uint64(vpn2(aligned_va));
     bp_print_string(" cfg\n");
-    l1pt[vpn2(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | PAGE_PERMS_ALL;;
+    l1pt[vpn2(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | PAGE_PERMS_USER_ALL;;
 }
 
 static void map_code_page() {
@@ -81,7 +85,10 @@ static void map_code_page() {
     bp_hprint_uint64(vpn2(aligned_va));
     bp_print_string(" code\n");
     l1pt[vpn2(aligned_va)] = ((uint64_t)l2pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
-    l2pt[vpn1(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | PAGE_PERMS_ALL;
+    l2pt[vpn1(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | PAGE_PERMS_USER_ALL;
+    // Trap handler executes in S-mode which isn't allowed to execute instructions from U-mode pages.
+    // Duplicate the code/data page for S-mode to use purely for trap handler code.
+    l2pt[vpn1(aligned_va+UMODE_TO_SMODE_CODE_OFFSET)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | PAGE_PERMS_SUPERVISOR_ALL;
 }
 
 
@@ -104,6 +111,12 @@ static void map_test_page(uint64_t test_page_num, uint64_t leaf_perm) {
 }
 
 void handle_fault(trapframe_t* tf) {
+  bp_hprint_uint64(tf->epc);
+  bp_cprint('\n');
+  bp_hprint_uint64(tf->badvaddr);
+  bp_cprint('\n');
+  bp_hprint_uint64(tf->cause);
+  bp_cprint('\n');
   if (!test_active) {
     bp_print_string("Fault occurred while no test active, aborting...\n");
     terminate(-1);
@@ -121,8 +134,8 @@ void handle_fault(trapframe_t* tf) {
   latest_fault_info.cause = tf->cause;
   latest_fault_info.present = true;
 
-  bp_print_string("returning");
-  tf->epc = (uint64_t)&userspace_trap_return_trampoline;
+  bp_print_string("returning\n");
+  tf->epc = (uint64_t)&userspace_trap_return_trampoline - UMODE_TO_SMODE_CODE_OFFSET;
 }
 
 void handle_trap(trapframe_t* tf) {
@@ -140,7 +153,8 @@ void init_vm() {
   uint64_t satp_val = ((uint64_t)l1pt >> PGSHIFT) | ((uint64_t)SATP_MODE_SV39 * (SATP_MODE & ~(SATP_MODE<<1)));
   write_csr(satp, satp_val);
   set_csr(mstatus, MSTATUS_SUM);
-  write_csr(stvec, trap_entry);
+  set_csr(sstatus, SSTATUS_SUM);
+  write_csr(stvec, trap_entry+UMODE_TO_SMODE_CODE_OFFSET);
   write_csr(sscratch, read_csr(mscratch)); // TODO: is this right? removed a mapping
   write_csr(medeleg,
     (1 << CAUSE_FETCH_PAGE_FAULT) |
@@ -286,28 +300,28 @@ int main(int argc, char** argv) {
   map_code_page();
   map_cfg_page(); // TODO: might not use
 
-  map_test_pair(0, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
+  map_test_pair(0, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
   place_dummy_instruction(test_0_aligned_execution_across_page_boundary_gadget_address);
   place_end_instructions(test_0_aligned_execution_across_page_boundary_gadget_address+4);
 
-  // map_test_pair(1, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
+  // map_test_pair(1, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
   // place_dummy_instruction(test_1_misaligned_within_single_page_gadget_address);
   // place_end_instructions(test_1_misaligned_within_single_page_gadget_address+4);
 
-  // map_test_pair(2, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
+  // map_test_pair(2, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
   // place_dummy_instruction(test_2_misaligned_execution_across_page_boundary_gadget_address);
   // place_end_instructions(test_2_misaligned_execution_across_page_boundary_gadget_address+4);
 
-  // map_test_pair(3, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
+  // map_test_pair(3, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
   // place_dummy_instruction(test_3_tlb_miss_both_halves_gadget_address);
   // place_end_instructions(test_3_tlb_miss_both_halves_gadget_address+4);
 
-  // map_test_pair(4, PAGE_PERMS_ALL, PAGE_PERMS_ALL);
+  // map_test_pair(4, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
   // place_dummy_instruction(test_4_tlb_miss_first_half_only_primary_gadget_address);
   // place_end_instructions(test_4_tlb_miss_first_half_only_primary_gadget_address+4);
   // place_end_instructions(test_4_tlb_miss_first_half_only_secondary_gadget_address);
 
-  // map_test_pair(5, PAGE_PERMS_NOEXEC, PAGE_PERMS_ALL);
+  // map_test_pair(5, PAGE_PERMS_NOEXEC, PAGE_PERMS_USER_ALL);
   // place_dummy_instruction(test_5_access_fault_within_single_page);
   // place_end_instructions(test_5_access_fault_within_single_page+4);
 
