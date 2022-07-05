@@ -251,13 +251,13 @@ void run_test() {
   // TODO: yet another mindless fencei 
   asm volatile ("fence.i");
 
-  // execute_and_expect_success(test_0_aligned_execution_across_page_boundary_gadget_address);
-  // execute_and_expect_success(test_1_misaligned_within_single_page_gadget_address);
-  // execute_and_expect_success(test_2_misaligned_execution_across_page_boundary_gadget_address);
-  // execute_and_expect_success(test_3_tlb_miss_both_halves_gadget_address);
+  execute_and_expect_success(test_0_aligned_execution_across_page_boundary_gadget_address);
+  execute_and_expect_success(test_1_misaligned_within_single_page_gadget_address);
+  execute_and_expect_success(test_2_misaligned_execution_across_page_boundary_gadget_address);
+  execute_and_expect_success(test_3_tlb_miss_both_halves_gadget_address);
   // // Execute test 4 "secondary" gadget first to prime ITLB and I$
-  // execute_and_expect_success(test_4_tlb_miss_first_half_only_secondary_gadget_address);
-  // execute_and_expect_success(test_4_tlb_miss_first_half_only_primary_gadget_address);
+  execute_and_expect_success(test_4_tlb_miss_first_half_only_secondary_gadget_address);
+  execute_and_expect_success(test_4_tlb_miss_first_half_only_primary_gadget_address);
 
   execute_and_expect_fault(test_5_access_fault_within_single_page, test_5_access_fault_within_single_page, CAUSE_FETCH_PAGE_FAULT, test_5_access_fault_within_single_page);
 
@@ -301,26 +301,26 @@ int main(int argc, char** argv) {
   map_code_page();
   map_cfg_page(); // TODO: might not use
 
-  // map_test_pair(0, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
-  // place_dummy_instruction(test_0_aligned_execution_across_page_boundary_gadget_address);
-  // place_end_instructions(test_0_aligned_execution_across_page_boundary_gadget_address+4);
+  map_test_pair(0, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
+  place_dummy_instruction(test_0_aligned_execution_across_page_boundary_gadget_address);
+  place_end_instructions(test_0_aligned_execution_across_page_boundary_gadget_address+4);
 
-  // map_test_pair(1, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
-  // place_dummy_instruction(test_1_misaligned_within_single_page_gadget_address);
-  // place_end_instructions(test_1_misaligned_within_single_page_gadget_address+4);
+  map_test_pair(1, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
+  place_dummy_instruction(test_1_misaligned_within_single_page_gadget_address);
+  place_end_instructions(test_1_misaligned_within_single_page_gadget_address+4);
 
-  // map_test_pair(2, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
-  // place_dummy_instruction(test_2_misaligned_execution_across_page_boundary_gadget_address);
-  // place_end_instructions(test_2_misaligned_execution_across_page_boundary_gadget_address+4);
+  map_test_pair(2, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
+  place_dummy_instruction(test_2_misaligned_execution_across_page_boundary_gadget_address);
+  place_end_instructions(test_2_misaligned_execution_across_page_boundary_gadget_address+4);
 
-  // map_test_pair(3, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
-  // place_dummy_instruction(test_3_tlb_miss_both_halves_gadget_address);
-  // place_end_instructions(test_3_tlb_miss_both_halves_gadget_address+4);
+  map_test_pair(3, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
+  place_dummy_instruction(test_3_tlb_miss_both_halves_gadget_address);
+  place_end_instructions(test_3_tlb_miss_both_halves_gadget_address+4);
 
-  // map_test_pair(4, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
-  // place_dummy_instruction(test_4_tlb_miss_first_half_only_primary_gadget_address);
-  // place_end_instructions(test_4_tlb_miss_first_half_only_primary_gadget_address+4);
-  // place_end_instructions(test_4_tlb_miss_first_half_only_secondary_gadget_address);
+  map_test_pair(4, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
+  place_dummy_instruction(test_4_tlb_miss_first_half_only_primary_gadget_address);
+  place_end_instructions(test_4_tlb_miss_first_half_only_primary_gadget_address+4);
+  place_end_instructions(test_4_tlb_miss_first_half_only_secondary_gadget_address);
 
   map_test_pair(5, PAGE_PERMS_USER_NOEXEC, PAGE_PERMS_USER_ALL);
   place_dummy_instruction(test_5_access_fault_within_single_page);
