@@ -24,8 +24,7 @@ volatile uint32_t *cfg_reg_icache_mode = (volatile uint32_t *) 0x200204;
 
 #define PAGE_PERMS_USER_ALL PTE_U_LEAF
 #define PAGE_PERMS_SUPERVISOR_ALL PTE_S_LEAF
-#define PAGE_PERMS_USER_NOEXEC 0
-//(PAGE_PERMS_USER_ALL & ~(uint64_t)PTE_X & ~(uint64_t)PTE_R & ~(uint64_t)PTE_W & ~(uint64_t)PTE_V)
+#define PAGE_PERMS_USER_NOEXEC (PAGE_PERMS_USER_ALL & ~(uint64_t)PTE_X & ~(uint64_t)PTE_W & ~(uint64_t)PTE_R)
 
 #define FAULT_MAGIC 0x8BADF00D
 
@@ -69,8 +68,6 @@ static void map_cfg_page() {
     uint64_t aligned_va = 0;
     uint64_t aligned_pa = 0;
 
-    bp_hprint_uint64(vpn2(aligned_va));
-    bp_print_string(" cfg\n");
     l1pt[vpn2(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | PAGE_PERMS_USER_ALL;;
 }
 
@@ -81,8 +78,6 @@ static void map_code_page() {
     uint64_t aligned_va = DRAM_BASE;
     uint64_t aligned_pa = DRAM_BASE;
 
-    bp_hprint_uint64(vpn2(aligned_va));
-    bp_print_string(" code\n");
     l1pt[vpn2(aligned_va)] = ((uint64_t)l2pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
     l2pt[vpn1(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | PAGE_PERMS_USER_ALL;
     // Trap handler executes in S-mode which isn't allowed to execute instructions from U-mode pages.
@@ -95,8 +90,6 @@ static void map_test_page(uint64_t test_page_num, uint64_t leaf_perm) {
     uint64_t aligned_va = DATA_PAGE_VADDR(test_page_num);
     uint64_t aligned_pa = DATA_PAGE_VADDR_TO_PADDR(aligned_va);
 
-    bp_hprint_uint64(vpn2(aligned_va));
-    bp_print_string(" test\n");
     l1pt[vpn2(aligned_va)] = ((uint64_t)l2pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
     l2pt[vpn1(aligned_va)] = ((uint64_t)l3pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
     l3pt[vpn0(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | leaf_perm;
