@@ -59,7 +59,6 @@ static const uint64_t test_5_access_fault_within_single_page = TEST_BOUNDARY_VAD
 uint64_t pt[NPT][PTES_PER_PT] __attribute__((aligned(PGSIZE))) = {0};
 
 uint64_t userspace_trap_return_trampoline() {
-  bp_print_string("tramp\n");
   return FAULT_MAGIC;
 }
 
@@ -96,13 +95,6 @@ static void map_test_page(uint64_t test_page_num, uint64_t leaf_perm) {
     uint64_t aligned_va = DATA_PAGE_VADDR(test_page_num);
     uint64_t aligned_pa = DATA_PAGE_VADDR_TO_PADDR(aligned_va);
 
-    // bp_hprint_uint64(aligned_va);
-    // bp_cprint('\n');
-
-    // bp_hprint_uint64(aligned_pa);
-    // bp_cprint('\n');
-    // bp_cprint('\n');
-
     bp_hprint_uint64(vpn2(aligned_va));
     bp_print_string(" test\n");
     l1pt[vpn2(aligned_va)] = ((uint64_t)l2pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
@@ -111,12 +103,6 @@ static void map_test_page(uint64_t test_page_num, uint64_t leaf_perm) {
 }
 
 void handle_fault(trapframe_t* tf) {
-  bp_hprint_uint64(tf->epc);
-  bp_cprint('\n');
-  bp_hprint_uint64(tf->badvaddr);
-  bp_cprint('\n');
-  bp_hprint_uint64(tf->cause);
-  bp_cprint('\n');
   if (!test_active) {
     bp_print_string("Fault occurred while no test active, aborting...\n");
     terminate(-1);
@@ -134,12 +120,11 @@ void handle_fault(trapframe_t* tf) {
   latest_fault_info.cause = tf->cause;
   latest_fault_info.present = true;
 
-  bp_print_string("returning\n");
+  // TODO: make offsets clearer
   tf->epc = (uint64_t)&userspace_trap_return_trampoline - UMODE_TO_SMODE_CODE_OFFSET;
 }
 
 void handle_trap(trapframe_t* tf) {
-  bp_print_string("trap\n");
   if (tf->cause == CAUSE_FETCH_PAGE_FAULT || tf->cause == CAUSE_FETCH_ACCESS)
     handle_fault(tf);
   else
@@ -152,10 +137,13 @@ void init_vm() {
   // enable memory mappings
   uint64_t satp_val = ((uint64_t)l1pt >> PGSHIFT) | ((uint64_t)SATP_MODE_SV39 * (SATP_MODE & ~(SATP_MODE<<1)));
   write_csr(satp, satp_val);
+  // Allow machine and supervisor modes to read/write user memory
   set_csr(mstatus, MSTATUS_SUM);
   set_csr(sstatus, SSTATUS_SUM);
   write_csr(stvec, trap_entry+UMODE_TO_SMODE_CODE_OFFSET);
-  write_csr(sscratch, read_csr(mscratch)); // TODO: is this right? removed a mapping
+  write_csr(sscratch, read_csr(mscratch));
+  // Exceptions we don't care about can be routed to the default machine-mode
+  // handler so they are pretty-printed and trigger an abort.
   write_csr(medeleg,
     (1 << CAUSE_FETCH_PAGE_FAULT) |
     (1 << CAUSE_FETCH_ACCESS));
@@ -168,7 +156,7 @@ void init_vm() {
   asm volatile ("fence.i");
 }
 
-void execute_and_expect_fault(uint64_t gadget_address, uint64_t expected_address, uint64_t expected_cause, uint64_t expected_val) {
+uint64_t execute_test_gadget(uint64_t gadget_address) {
   latest_fault_info = (const struct fault_info_t){ 0 };
   test_active = false;
 
@@ -182,41 +170,68 @@ void execute_and_expect_fault(uint64_t gadget_address, uint64_t expected_address
   asm volatile ("li a0, 0");
   uint64_t result = gadget_fn();
   test_active = false;
-  bp_print_string("result: ");
-  bp_hprint_uint64(result);
 
-  // "end" instruction sequence returns 0x42
-  if (result == 0x42) {
-    bp_print_string(" (pass)\n");
-  } else {
+  return result;
+}
+
+void execute_and_expect_fault(uint64_t gadget_address, uint64_t expected_pc, uint64_t expected_cause, uint64_t expected_val) {
+  uint64_t result = execute_test_gadget(gadget_address);
+
+  // verify that fault was triggered -- trap handler returns magic value to
+  // indicate it triggered a trap
+  if (result != FAULT_MAGIC) {
+    bp_print_string("result: ");
+    bp_hprint_uint64(result);
     bp_print_string(" (fail)\n");
     terminate(-1);
   }
 
-  if (latest_fault_info.present) {
-    bp_print_string("unexpected fault:\n\taddress: ");
-    bp_hprint_uint64(latest_fault_info.pc);
-    bp_print_string("\n\tcause: ");
-    bp_hprint_uint64(latest_fault_info.cause);
-    bp_cprint('\n');
+  if (!latest_fault_info.present) {
+    // In theory, if magic return value check passes we must have seen a trap.
+    // Confirm here that data was passed back to usermode correctly.
+    bp_print_string("expected fault, but none was logged\n");
     terminate(-1);
   }
+
+  if (latest_fault_info.pc != expected_pc || latest_fault_info.tval != expected_val || latest_fault_info.cause != expected_cause) {
+    bp_print_string("Incorrect fault triggered!\n");
+
+    bp_print_string("scause:\n");
+    bp_print_string("\texpected ");
+    bp_hprint_uint64(expected_cause);
+    bp_cprint('\n');
+    bp_print_string("\tgot      ");
+    bp_hprint_uint64(latest_fault_info.cause);
+    bp_cprint('\n');
+
+
+    bp_print_string("stval:\n");
+    bp_print_string("\texpected ");
+    bp_hprint_uint64(expected_val);
+    bp_cprint('\n');
+    bp_print_string("\tgot      ");
+    bp_hprint_uint64(latest_fault_info.tval);
+    bp_cprint('\n');
+
+    bp_print_string("sepc:\n");
+    bp_print_string("\texpected ");
+    bp_hprint_uint64(expected_pc);
+    bp_cprint('\n');
+    bp_print_string("\tgot      ");
+    bp_hprint_uint64(latest_fault_info.pc);
+    bp_cprint('\n');
+
+    terminate(-1);
+  }
+
+  bp_print_string("fault pc: ");
+  bp_hprint_uint64(latest_fault_info.pc);
+  bp_print_string(" (pass)\n");
 }
 
 void execute_and_expect_success(uint64_t gadget_address) {
-  latest_fault_info = (const struct fault_info_t){ 0 };
-  test_active = false;
+  uint64_t result = execute_test_gadget(gadget_address);
 
-  test_gadget_t gadget_fn = (test_gadget_t)gadget_address;
-
-  bp_print_string("jumping to: ");
-  bp_hprint_uint64((uint64_t)gadget_fn);
-  bp_cprint('\n');
-
-  test_active = true;
-  asm volatile ("li a0, 0");
-  uint64_t result = gadget_fn();
-  test_active = false;
   bp_print_string("result: ");
   bp_hprint_uint64(result);
 
@@ -239,26 +254,18 @@ void execute_and_expect_success(uint64_t gadget_address) {
 }
 
 void run_test() {
-  // bp_print_string("gadget address:");
-  // bp_hprint_uint64(test_0_aligned_execution_across_page_boundary_gadget_address);
-  // bp_cprint('\n');
-  // bp_print_string("insn at address: ");
-  // bp_hprint_uint64(*((volatile uint64_t*)test_0_aligned_execution_across_page_boundary_gadget_address));
-  // bp_cprint('\n');
-
   // TODO: yet another mindless fencei 
   asm volatile ("fence.i");
 
-  // execute_and_expect_success(test_0_aligned_execution_across_page_boundary_gadget_address);
-  // execute_and_expect_success(test_1_misaligned_within_single_page_gadget_address);
-  // execute_and_expect_success(test_2_misaligned_execution_across_page_boundary_gadget_address);
-  // execute_and_expect_success(test_3_tlb_miss_both_halves_gadget_address);
+  execute_and_expect_success(test_0_aligned_execution_across_page_boundary_gadget_address);
+  execute_and_expect_success(test_1_misaligned_within_single_page_gadget_address);
+  execute_and_expect_success(test_2_misaligned_execution_across_page_boundary_gadget_address);
+  execute_and_expect_success(test_3_tlb_miss_both_halves_gadget_address);
   // Execute test 4 "secondary" gadget first to prime ITLB and I$
-  // execute_and_expect_success(test_4_tlb_miss_first_half_only_secondary_gadget_address);
-  // execute_and_expect_success(test_4_tlb_miss_first_half_only_primary_gadget_address);
+  execute_and_expect_success(test_4_tlb_miss_first_half_only_secondary_gadget_address);
+  execute_and_expect_success(test_4_tlb_miss_first_half_only_primary_gadget_address);
 
-  execute_and_expect_success(test_5_access_fault_within_single_page);
-  // execute_and_expect_fault(test_5_access_fault_within_single_page, test_5_access_fault_within_single_page, CAUSE_FETCH_ACCESS, test_5_access_fault_within_single_page);
+  execute_and_expect_fault(test_5_access_fault_within_single_page, test_5_access_fault_within_single_page, CAUSE_FETCH_ACCESS, test_5_access_fault_within_single_page);
 
   // TODO
   terminate(0); // temp
@@ -304,26 +311,26 @@ int main(int argc, char** argv) {
   place_dummy_instruction(test_0_aligned_execution_across_page_boundary_gadget_address);
   place_end_instructions(test_0_aligned_execution_across_page_boundary_gadget_address+4);
 
-  // map_test_pair(1, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
-  // place_dummy_instruction(test_1_misaligned_within_single_page_gadget_address);
-  // place_end_instructions(test_1_misaligned_within_single_page_gadget_address+4);
+  map_test_pair(1, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
+  place_dummy_instruction(test_1_misaligned_within_single_page_gadget_address);
+  place_end_instructions(test_1_misaligned_within_single_page_gadget_address+4);
 
-  // map_test_pair(2, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
-  // place_dummy_instruction(test_2_misaligned_execution_across_page_boundary_gadget_address);
-  // place_end_instructions(test_2_misaligned_execution_across_page_boundary_gadget_address+4);
+  map_test_pair(2, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
+  place_dummy_instruction(test_2_misaligned_execution_across_page_boundary_gadget_address);
+  place_end_instructions(test_2_misaligned_execution_across_page_boundary_gadget_address+4);
 
-  // map_test_pair(3, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
-  // place_dummy_instruction(test_3_tlb_miss_both_halves_gadget_address);
-  // place_end_instructions(test_3_tlb_miss_both_halves_gadget_address+4);
+  map_test_pair(3, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
+  place_dummy_instruction(test_3_tlb_miss_both_halves_gadget_address);
+  place_end_instructions(test_3_tlb_miss_both_halves_gadget_address+4);
 
-  // map_test_pair(4, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
-  // place_dummy_instruction(test_4_tlb_miss_first_half_only_primary_gadget_address);
-  // place_end_instructions(test_4_tlb_miss_first_half_only_primary_gadget_address+4);
-  // place_end_instructions(test_4_tlb_miss_first_half_only_secondary_gadget_address);
+  map_test_pair(4, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
+  place_dummy_instruction(test_4_tlb_miss_first_half_only_primary_gadget_address);
+  place_end_instructions(test_4_tlb_miss_first_half_only_primary_gadget_address+4);
+  place_end_instructions(test_4_tlb_miss_first_half_only_secondary_gadget_address);
 
-  // map_test_pair(5, PAGE_PERMS_NOEXEC, PAGE_PERMS_USER_ALL);
-  // place_dummy_instruction(test_5_access_fault_within_single_page);
-  // place_end_instructions(test_5_access_fault_within_single_page+4);
+  map_test_pair(5, PAGE_PERMS_USER_NOEXEC, PAGE_PERMS_USER_ALL);
+  place_dummy_instruction(test_5_access_fault_within_single_page);
+  place_end_instructions(test_5_access_fault_within_single_page+4);
 
   init_vm();
 
