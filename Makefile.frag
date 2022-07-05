@@ -30,7 +30,7 @@ BP_TESTS_C = \
   nanboxing             \
   misaligned_instructions_basic_jumps \
   misaligned_instructions_advanced_jumps \
-  misaligned_instructions_page_fault \
+  misaligned_instructions_virtual_memory \
   execute_dynamic_instruction \
 
 BP_MULTICORE_TESTS_C = \
