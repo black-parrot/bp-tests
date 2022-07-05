@@ -71,43 +71,14 @@ static const uint64_t test_7_access_fault_first_half_only = TEST_BOUNDARY_VADDR(
 
 uint64_t pt[NPT][PTES_PER_PT] __attribute__((aligned(PGSIZE))) = {0};
 
+/*
+ * Dummy function which returns to the caller. Used as the sepc target for test
+ * -ending traps.
+ */
 uint64_t userspace_trap_return_trampoline() {
   return FAULT_MAGIC;
 }
 
-static void m_map_cfg_page() {
-  // The lowest virtual gigapage is mapped 1:1 to physical addresses for CFG registers
-  // Only the first two megapages are required, but gigapage requires fewer page tables
-
-    uint64_t aligned_va = 0;
-    uint64_t aligned_pa = 0;
-
-    l1pt[vpn2(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | PAGE_PERMS_USER_ALL;;
-}
-
-static void m_map_code_page() {
-  // Megapage starting at DRAM_BASE is mapped 1:1 to physical addresses so that we don't have to
-  // handle a relocation
-
-    uint64_t aligned_va = DRAM_BASE;
-    uint64_t aligned_pa = DRAM_BASE;
-
-    l1pt[vpn2(aligned_va)] = ((uint64_t)l2pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
-    l2pt[vpn1(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | PAGE_PERMS_USER_ALL;
-    // Trap handler executes in S-mode which isn't allowed to execute instructions from U-mode pages.
-    // Duplicate the code/data page for S-mode to use purely for trap handler code.
-    l2pt[vpn1(aligned_va+UMODE_TO_SMODE_CODE_OFFSET)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | PAGE_PERMS_SUPERVISOR_ALL;
-}
-
-
-static void m_map_test_page(uint64_t test_page_num, uint64_t leaf_perm) {
-    uint64_t aligned_va = DATA_PAGE_VADDR(test_page_num);
-    uint64_t aligned_pa = DATA_PAGE_VADDR_TO_PADDR(aligned_va);
-
-    l1pt[vpn2(aligned_va)] = ((uint64_t)l2pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
-    l2pt[vpn1(aligned_va)] = ((uint64_t)l3pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
-    l3pt[vpn0(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | leaf_perm;
-}
 
 void s_handle_vm_fault(trapframe_t* tf) {
   if (!test_active) {
@@ -306,13 +277,70 @@ void u_test_main() {
   terminate(0);
 }
 
+// Trap handler invoked by vm_start.S in response to an ECALL from U-mode
+void handle_u_ecall(uint64_t arg) {
+  if (arg == 1) {
+    bp_print_string("Setting I$ to cached mode (default)\n");
+    // Set I$ mode to cached (default)
+    *cfg_reg_icache_mode = 1;
+    flush_tlb();
+  } else if (arg == 2) {
+    bp_print_string("Setting I$ to nonspec mode\n");
+    // Set I$ mode to nonspeculative
+    *cfg_reg_icache_mode = 2;
+    flush_tlb();
+  } else {
+    bp_hprint_uint64(arg);
+    bp_panic("Unknown ECALL arg");
+  }
+}
 
+static void m_map_cfg_page() {
+  // The lowest virtual gigapage is mapped 1:1 to physical addresses for CFG registers
+  // Only the first two megapages are required, but gigapage requires fewer page tables
+
+    uint64_t aligned_va = 0;
+    uint64_t aligned_pa = 0;
+
+    l1pt[vpn2(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | PAGE_PERMS_USER_ALL;;
+}
+
+static void m_map_code_page() {
+  // Megapage starting at DRAM_BASE is mapped 1:1 to physical addresses so that we don't have to
+  // handle a relocation
+
+    uint64_t aligned_va = DRAM_BASE;
+    uint64_t aligned_pa = DRAM_BASE;
+
+    l1pt[vpn2(aligned_va)] = ((uint64_t)l2pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
+    l2pt[vpn1(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | PAGE_PERMS_USER_ALL;
+    // Trap handler executes in S-mode which isn't allowed to execute instructions from U-mode pages.
+    // Duplicate the code/data page for S-mode to use purely for trap handler code.
+    l2pt[vpn1(aligned_va+UMODE_TO_SMODE_CODE_OFFSET)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | PAGE_PERMS_SUPERVISOR_ALL;
+}
+
+static void m_map_test_page(uint64_t test_page_num, uint64_t leaf_perm) {
+    uint64_t aligned_va = DATA_PAGE_VADDR(test_page_num);
+    uint64_t aligned_pa = DATA_PAGE_VADDR_TO_PADDR(aligned_va);
+
+    l1pt[vpn2(aligned_va)] = ((uint64_t)l2pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
+    l2pt[vpn1(aligned_va)] = ((uint64_t)l3pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
+    l3pt[vpn0(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | leaf_perm;
+}
+
+/*
+ * Maps a pair of test pages, indexed by the ID of the test being prepared.
+ */
 void m_map_test_pair(int test_num, uint64_t first_page_perms, uint64_t second_page_perms) {
   uint64_t first_page_num = TEST_PAGE_NUM_FOR_TEST_NUM(test_num);
   m_map_test_page(first_page_num, first_page_perms);
   m_map_test_page(first_page_num+1, second_page_perms);
 }
 
+/*
+ * Places the given 32-bit instruction and the specified address, requiring only
+ * 16-bit alignment.
+ */
 void m_place_instruction(uint64_t vaddr, uint32_t instruction) {
   if (vaddr % 2 == 0) {
     // Decompose into aligned writes
@@ -331,27 +359,13 @@ void m_place_dummy_instruction(uint64_t vaddr) {
   m_place_instruction(vaddr, 0x00000013); // nop
 }
 
+/*
+ * Uses m_place_instruction to place a two-instruction sequence which returns
+ * 0x42 when invoked.
+ */
 void m_place_end_instructions(uint64_t vaddr) {
   m_place_instruction(vaddr,   0x04200513); // li a0,0x42
   m_place_instruction(vaddr+4, 0x00008067); // ret
-}
-
-// Trap handler invoked by vm_start.S in response to an ECALL from U-mode
-void handle_u_ecall(uint64_t arg) {
-  if (arg == 1) {
-    bp_print_string("Setting I$ to cached mode (default)\n");
-    // Set I$ mode to cached (default)
-    *cfg_reg_icache_mode = 1;
-    flush_tlb();
-  } else if (arg == 2) {
-    bp_print_string("Setting I$ to nonspec mode\n");
-    // Set I$ mode to nonspeculative
-    *cfg_reg_icache_mode = 2;
-    flush_tlb();
-  } else {
-    bp_hprint_uint64(arg);
-    bp_panic("Unknown ECALL arg");
-  }
 }
 
 int main() {
