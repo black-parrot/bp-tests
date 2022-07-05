@@ -75,7 +75,7 @@ uint64_t userspace_trap_return_trampoline() {
   return FAULT_MAGIC;
 }
 
-static void map_cfg_page() {
+static void m_map_cfg_page() {
   // The lowest virtual gigapage is mapped 1:1 to physical addresses for CFG registers
   // Only the first two megapages are required, but gigapage requires fewer page tables
 
@@ -85,7 +85,7 @@ static void map_cfg_page() {
     l1pt[vpn2(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | PAGE_PERMS_USER_ALL;;
 }
 
-static void map_code_page() {
+static void m_map_code_page() {
   // Megapage starting at DRAM_BASE is mapped 1:1 to physical addresses so that we don't have to
   // handle a relocation
 
@@ -100,7 +100,7 @@ static void map_code_page() {
 }
 
 
-static void map_test_page(uint64_t test_page_num, uint64_t leaf_perm) {
+static void m_map_test_page(uint64_t test_page_num, uint64_t leaf_perm) {
     uint64_t aligned_va = DATA_PAGE_VADDR(test_page_num);
     uint64_t aligned_pa = DATA_PAGE_VADDR_TO_PADDR(aligned_va);
 
@@ -109,7 +109,7 @@ static void map_test_page(uint64_t test_page_num, uint64_t leaf_perm) {
     l3pt[vpn0(aligned_va)] = ((uint64_t)aligned_pa >> PGSHIFT << PTE_PPN_SHIFT) | leaf_perm;
 }
 
-void handle_fault(trapframe_t* tf) {
+void s_handle_vm_fault(trapframe_t* tf) {
   if (!test_active) {
     bp_print_string("Fault occurred while no test active, aborting...\n");
     terminate(-1);
@@ -131,23 +131,24 @@ void handle_fault(trapframe_t* tf) {
   tf->epc = (uint64_t)&userspace_trap_return_trampoline - UMODE_TO_SMODE_CODE_OFFSET;
 }
 
+// Trap handler invoked by stvec target in vm_start.S
 void handle_trap(trapframe_t* tf) {
   if (tf->cause == CAUSE_FETCH_PAGE_FAULT || tf->cause == CAUSE_FETCH_ACCESS)
-    handle_fault(tf);
+    s_handle_vm_fault(tf);
   else
     terminate(-1);
 
   pop_tf(tf);
 }
 
-void init_vm() {
+void m_init_vm() {
   // enable memory mappings
   uint64_t satp_val = ((uint64_t)l1pt >> PGSHIFT) | ((uint64_t)SATP_MODE_SV39 * (SATP_MODE & ~(SATP_MODE<<1)));
   write_csr(satp, satp_val);
   // Allow machine and supervisor modes to read/write user memory
   set_csr(mstatus, MSTATUS_SUM);
   set_csr(sstatus, SSTATUS_SUM);
-  write_csr(stvec, trap_entry+UMODE_TO_SMODE_CODE_OFFSET);
+  write_csr(stvec, trap_entry + UMODE_TO_SMODE_CODE_OFFSET);
   write_csr(sscratch, read_csr(mscratch));
   // Exceptions we don't care about can be routed to the default machine-mode
   // handler so they are pretty-printed and trigger an abort.
@@ -163,7 +164,7 @@ void init_vm() {
   asm volatile ("fence.i");
 }
 
-uint64_t execute_test_gadget(uint64_t gadget_address) {
+uint64_t u_execute_test_gadget(uint64_t gadget_address) {
   latest_fault_info = (const struct fault_info_t){ 0 };
   test_active = false;
 
@@ -181,8 +182,8 @@ uint64_t execute_test_gadget(uint64_t gadget_address) {
   return result;
 }
 
-void execute_and_expect_fault(uint64_t gadget_address, uint64_t expected_pc, uint64_t expected_cause, uint64_t expected_val) {
-  uint64_t result = execute_test_gadget(gadget_address);
+void u_execute_and_expect_fault(uint64_t gadget_address, uint64_t expected_pc, uint64_t expected_cause, uint64_t expected_val) {
+  uint64_t result = u_execute_test_gadget(gadget_address);
 
   // verify that fault was triggered -- trap handler returns magic value to
   // indicate it triggered a trap
@@ -235,8 +236,8 @@ void execute_and_expect_fault(uint64_t gadget_address, uint64_t expected_pc, uin
   bp_print_string(" (pass)\n");
 }
 
-void execute_and_expect_success(uint64_t gadget_address) {
-  uint64_t result = execute_test_gadget(gadget_address);
+void u_execute_and_expect_success(uint64_t gadget_address) {
+  uint64_t result = u_execute_test_gadget(gadget_address);
 
   bp_print_string("result: ");
   bp_hprint_uint64(result);
@@ -259,31 +260,31 @@ void execute_and_expect_success(uint64_t gadget_address) {
   }
 }
 
-void s_run_test_pass() {
-  execute_and_expect_success(test_0_aligned_execution_across_page_boundary_gadget_address);
-  execute_and_expect_success(test_1_misaligned_within_single_page_gadget_address);
-  execute_and_expect_success(test_2_misaligned_execution_across_page_boundary_gadget_address);
-  execute_and_expect_success(test_3_tlb_miss_both_halves_gadget_address);
+void u_run_test_pass() {
+  u_execute_and_expect_success(test_0_aligned_execution_across_page_boundary_gadget_address);
+  u_execute_and_expect_success(test_1_misaligned_within_single_page_gadget_address);
+  u_execute_and_expect_success(test_2_misaligned_execution_across_page_boundary_gadget_address);
+  u_execute_and_expect_success(test_3_tlb_miss_both_halves_gadget_address);
 
   // // Execute test 4 "secondary" gadget first to prime ITLB and I$
-  execute_and_expect_success(test_4_tlb_miss_first_half_only_secondary_gadget_address);
-  execute_and_expect_success(test_4_tlb_miss_first_half_only_primary_gadget_address);
+  u_execute_and_expect_success(test_4_tlb_miss_first_half_only_secondary_gadget_address);
+  u_execute_and_expect_success(test_4_tlb_miss_first_half_only_primary_gadget_address);
 
-  execute_and_expect_fault(
+  u_execute_and_expect_fault(
     test_5_access_fault_within_single_page,
     test_5_access_fault_within_single_page,
     CAUSE_FETCH_PAGE_FAULT,
     test_5_access_fault_within_single_page
   );
 
-  execute_and_expect_fault(
+  u_execute_and_expect_fault(
     test_6_access_fault_second_half_only,
     test_6_access_fault_second_half_only+4,
     CAUSE_FETCH_PAGE_FAULT,
     test_6_access_fault_second_half_only+6
   );
 
-  execute_and_expect_fault(
+  u_execute_and_expect_fault(
     test_7_access_fault_first_half_only,
     test_7_access_fault_first_half_only,
     CAUSE_FETCH_PAGE_FAULT,
@@ -291,13 +292,13 @@ void s_run_test_pass() {
   );
 }
 
-void s_test_main() {
+void u_test_main() {
   s_set_icache_default();
-  s_run_test_pass();
+  u_run_test_pass();
 
   bp_print_string("Re-running test suite in nonspec mode...\n");
   s_set_icache_nonspec();
-  s_run_test_pass();
+  u_run_test_pass();
 
   s_set_icache_default();
 
@@ -306,13 +307,13 @@ void s_test_main() {
 }
 
 
-void map_test_pair(int test_num, uint64_t first_page_perms, uint64_t second_page_perms) {
+void m_map_test_pair(int test_num, uint64_t first_page_perms, uint64_t second_page_perms) {
   uint64_t first_page_num = TEST_PAGE_NUM_FOR_TEST_NUM(test_num);
-  map_test_page(first_page_num, first_page_perms);
-  map_test_page(first_page_num+1, second_page_perms);
+  m_map_test_page(first_page_num, first_page_perms);
+  m_map_test_page(first_page_num+1, second_page_perms);
 }
 
-void place_instruction(uint64_t vaddr, uint32_t instruction) {
+void m_place_instruction(uint64_t vaddr, uint32_t instruction) {
   if (vaddr % 2 == 0) {
     // Decompose into aligned writes
     volatile void* target = ((volatile void*)DATA_PAGE_VADDR_TO_PADDR(vaddr));
@@ -326,15 +327,16 @@ void place_instruction(uint64_t vaddr, uint32_t instruction) {
   }
 }
 
-void place_dummy_instruction(uint64_t vaddr) {
-  place_instruction(vaddr, 0x00000013); // nop
+void m_place_dummy_instruction(uint64_t vaddr) {
+  m_place_instruction(vaddr, 0x00000013); // nop
 }
 
-void place_end_instructions(uint64_t vaddr) {
-  place_instruction(vaddr,   0x04200513); // li a0,0x42
-  place_instruction(vaddr+4, 0x00008067); // ret
+void m_place_end_instructions(uint64_t vaddr) {
+  m_place_instruction(vaddr,   0x04200513); // li a0,0x42
+  m_place_instruction(vaddr+4, 0x00008067); // ret
 }
 
+// Trap handler invoked by vm_start.S in response to an ECALL from U-mode
 void handle_u_ecall(uint64_t arg) {
   if (arg == 1) {
     bp_print_string("Setting I$ to cached mode (default)\n");
@@ -352,50 +354,49 @@ void handle_u_ecall(uint64_t arg) {
   }
 }
 
-int main(int argc, char** argv) {
+int main() {
+  m_map_code_page();
+  m_map_cfg_page();
 
-  map_code_page();
-  map_cfg_page();
+  m_map_test_pair(0, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
+  m_place_dummy_instruction(test_0_aligned_execution_across_page_boundary_gadget_address);
+  m_place_end_instructions(test_0_aligned_execution_across_page_boundary_gadget_address+4);
 
-  map_test_pair(0, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
-  place_dummy_instruction(test_0_aligned_execution_across_page_boundary_gadget_address);
-  place_end_instructions(test_0_aligned_execution_across_page_boundary_gadget_address+4);
+  m_map_test_pair(1, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
+  m_place_dummy_instruction(test_1_misaligned_within_single_page_gadget_address);
+  m_place_end_instructions(test_1_misaligned_within_single_page_gadget_address+4);
 
-  map_test_pair(1, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
-  place_dummy_instruction(test_1_misaligned_within_single_page_gadget_address);
-  place_end_instructions(test_1_misaligned_within_single_page_gadget_address+4);
+  m_map_test_pair(2, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
+  m_place_dummy_instruction(test_2_misaligned_execution_across_page_boundary_gadget_address);
+  m_place_end_instructions(test_2_misaligned_execution_across_page_boundary_gadget_address+4);
 
-  map_test_pair(2, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
-  place_dummy_instruction(test_2_misaligned_execution_across_page_boundary_gadget_address);
-  place_end_instructions(test_2_misaligned_execution_across_page_boundary_gadget_address+4);
+  m_map_test_pair(3, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
+  m_place_dummy_instruction(test_3_tlb_miss_both_halves_gadget_address);
+  m_place_end_instructions(test_3_tlb_miss_both_halves_gadget_address+4);
 
-  map_test_pair(3, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
-  place_dummy_instruction(test_3_tlb_miss_both_halves_gadget_address);
-  place_end_instructions(test_3_tlb_miss_both_halves_gadget_address+4);
+  m_map_test_pair(4, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
+  m_place_dummy_instruction(test_4_tlb_miss_first_half_only_primary_gadget_address);
+  m_place_end_instructions(test_4_tlb_miss_first_half_only_primary_gadget_address+4);
+  m_place_end_instructions(test_4_tlb_miss_first_half_only_secondary_gadget_address);
 
-  map_test_pair(4, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
-  place_dummy_instruction(test_4_tlb_miss_first_half_only_primary_gadget_address);
-  place_end_instructions(test_4_tlb_miss_first_half_only_primary_gadget_address+4);
-  place_end_instructions(test_4_tlb_miss_first_half_only_secondary_gadget_address);
+  m_map_test_pair(5, PAGE_PERMS_USER_NOEXEC, PAGE_PERMS_USER_ALL);
+  m_place_dummy_instruction(test_5_access_fault_within_single_page);
+  m_place_end_instructions(test_5_access_fault_within_single_page+4);
 
-  map_test_pair(5, PAGE_PERMS_USER_NOEXEC, PAGE_PERMS_USER_ALL);
-  place_dummy_instruction(test_5_access_fault_within_single_page);
-  place_end_instructions(test_5_access_fault_within_single_page+4);
+  m_map_test_pair(6, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_NOEXEC);
+  m_place_dummy_instruction(test_6_access_fault_second_half_only);
+  m_place_end_instructions(test_6_access_fault_second_half_only+4);
 
-  map_test_pair(6, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_NOEXEC);
-  place_dummy_instruction(test_6_access_fault_second_half_only);
-  place_end_instructions(test_6_access_fault_second_half_only+4);
+  m_map_test_pair(7, PAGE_PERMS_USER_NOEXEC, PAGE_PERMS_USER_ALL);
+  m_place_end_instructions(test_7_access_fault_first_half_only);
 
-  map_test_pair(7, PAGE_PERMS_USER_NOEXEC, PAGE_PERMS_USER_ALL);
-  place_end_instructions(test_7_access_fault_first_half_only);
-
-  init_vm();
+  m_init_vm();
 
   uint64_t stack_start = DRAM_BASE + MPGSIZE - 0x100;
 
   trapframe_t tf;
   memset(&tf, 0, sizeof(tf));
-  tf.epc = (uint64_t)s_test_main;
+  tf.epc = (uint64_t)u_test_main;
   tf.gpr[2] = stack_start; // sp
   pop_tf(&tf);
 
