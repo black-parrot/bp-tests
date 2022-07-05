@@ -26,6 +26,17 @@ volatile uint32_t *cfg_reg_icache_mode = (volatile uint32_t *) 0x200204;
 
 #define FAULT_MAGIC 0x8BADF00D
 
+#define s_set_icache_default()    \
+  asm volatile("li a0, 1\n\t" \
+               "li a1, 1\n\t" \
+               "ecall\n\t"    \
+              )
+
+#define s_set_icache_nonspec()    \
+  asm volatile("li a0, 2\n\t" \
+               "li a1, 1\n\t" \
+               "ecall\n\t"    \
+              )
 
 struct fault_info_t {
   uint64_t pc;
@@ -248,11 +259,12 @@ void execute_and_expect_success(uint64_t gadget_address) {
   }
 }
 
-void run_test() {
+void s_run_test_pass() {
   execute_and_expect_success(test_0_aligned_execution_across_page_boundary_gadget_address);
   execute_and_expect_success(test_1_misaligned_within_single_page_gadget_address);
   execute_and_expect_success(test_2_misaligned_execution_across_page_boundary_gadget_address);
   execute_and_expect_success(test_3_tlb_miss_both_halves_gadget_address);
+
   // // Execute test 4 "secondary" gadget first to prime ITLB and I$
   execute_and_expect_success(test_4_tlb_miss_first_half_only_secondary_gadget_address);
   execute_and_expect_success(test_4_tlb_miss_first_half_only_primary_gadget_address);
@@ -277,12 +289,17 @@ void run_test() {
     CAUSE_FETCH_PAGE_FAULT,
     test_7_access_fault_first_half_only
   );
+}
 
-  // // TODO
-  // terminate(0); // temp
-  asm volatile("li a0, 1");
-  asm volatile("li a1, 1");
-  asm volatile("ecall");
+void s_test_main() {
+  s_set_icache_default();
+  s_run_test_pass();
+
+  bp_print_string("Re-running test suite in nonspec mode...\n");
+  s_set_icache_nonspec();
+  s_run_test_pass();
+
+  s_set_icache_default();
 
   bp_print_string("All tests passed\n");
   terminate(0);
@@ -374,18 +391,14 @@ int main(int argc, char** argv) {
 
   init_vm();
 
-  // TODO: run tests twice, once default and once with nonspec I$
-  flush_tlb();
-  *cfg_reg_icache_mode = 2;
-
   uint64_t stack_start = DRAM_BASE + MPGSIZE - 0x100;
 
   trapframe_t tf;
   memset(&tf, 0, sizeof(tf));
-  tf.epc = (uint64_t)run_test;
+  tf.epc = (uint64_t)s_test_main;
   tf.gpr[2] = stack_start; // sp
   pop_tf(&tf);
 
-  bp_print_string("returned\n");
-  return 0;
+  bp_panic("Control returned to machine mode entry point");
+  return -1;
 }
