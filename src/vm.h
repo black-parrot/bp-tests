@@ -17,8 +17,8 @@
 #define CAUSE_LOAD_PAGE_FAULT     0xd
 #define CAUSE_STORE_PAGE_FAULT    0xf
 
-#define PTE_S_LEAF PTE_V | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D
-#define PTE_U_LEAF PTE_V | PTE_U | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D
+#define PTE_S_LEAF (PTE_V | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D)
+#define PTE_U_LEAF (PTE_V | PTE_U | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D)
 
 #define PGSHIFT       12
 #define PTE_PPN_SHIFT 10
