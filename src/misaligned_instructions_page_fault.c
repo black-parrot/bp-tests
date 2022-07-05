@@ -54,6 +54,10 @@ static const uint64_t test_4_tlb_miss_first_half_only_primary_gadget_address = T
 static const uint64_t test_4_tlb_miss_first_half_only_secondary_gadget_address = TEST_BOUNDARY_VADDR(4) + 16;
 // Misaligned, entirely within a single page, and page is marked as non-executable.
 static const uint64_t test_5_access_fault_within_single_page = TEST_BOUNDARY_VADDR(5) - 14;
+// Misaligned instruction spanning page boundary, second half is in non-executable page
+static const uint64_t test_6_access_fault_second_half_only = TEST_BOUNDARY_VADDR(6) - 6;
+// Misaligned instruction spanning page boundary, first half is in non-executable page
+static const uint64_t test_7_access_fault_first_half_only = TEST_BOUNDARY_VADDR(7) - 2;
 
 uint64_t pt[NPT][PTES_PER_PT] __attribute__((aligned(PGSIZE))) = {0};
 
@@ -259,7 +263,26 @@ void run_test() {
   execute_and_expect_success(test_4_tlb_miss_first_half_only_secondary_gadget_address);
   execute_and_expect_success(test_4_tlb_miss_first_half_only_primary_gadget_address);
 
-  execute_and_expect_fault(test_5_access_fault_within_single_page, test_5_access_fault_within_single_page, CAUSE_FETCH_PAGE_FAULT, test_5_access_fault_within_single_page);
+  execute_and_expect_fault(
+    test_5_access_fault_within_single_page,
+    test_5_access_fault_within_single_page,
+    CAUSE_FETCH_PAGE_FAULT,
+    test_5_access_fault_within_single_page
+  );
+
+  execute_and_expect_fault(
+    test_6_access_fault_second_half_only,
+    test_6_access_fault_second_half_only+4,
+    CAUSE_FETCH_PAGE_FAULT,
+    test_6_access_fault_second_half_only+6
+  );
+
+  execute_and_expect_fault(
+    test_7_access_fault_first_half_only,
+    test_7_access_fault_first_half_only,
+    CAUSE_FETCH_PAGE_FAULT,
+    test_7_access_fault_first_half_only
+  );
 
   // TODO
   terminate(0); // temp
@@ -326,6 +349,13 @@ int main(int argc, char** argv) {
   place_dummy_instruction(test_5_access_fault_within_single_page);
   place_end_instructions(test_5_access_fault_within_single_page+4);
 
+  map_test_pair(6, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_NOEXEC);
+  place_dummy_instruction(test_6_access_fault_second_half_only);
+  place_end_instructions(test_6_access_fault_second_half_only+4);
+
+  map_test_pair(7, PAGE_PERMS_USER_NOEXEC, PAGE_PERMS_USER_ALL);
+  place_end_instructions(test_7_access_fault_first_half_only);
+
   init_vm();
 
   // TODO: run tests twice, once default and once with nonspec I$
@@ -335,7 +365,7 @@ int main(int argc, char** argv) {
   // x TLB miss both halves
   // x TLB miss second half only
   // x TLB miss first half only
-  // miss and fault on both halves
+  // x miss and fault on both halves
   // miss and fault on first half only
   // miss and fault on second half only
   // faults but pre-loaded
