@@ -4,12 +4,10 @@
 
 volatile uint32_t *cfg_reg_icache_mode = (volatile uint32_t *) 0x200204;
 
-#define NPT 4
+#define NPT 3
 #define l1pt pt[0]
 #define l2pt pt[1]
 #define l3pt pt[2]
-// TODO: remove
-#define kpt  pt[3]
 
 // Address of start of the Nth "data page", an arbitrary range of 4k pages for testing use
 // Intentionally _not_ the same VA as PA -- we apply an arbitrary 127-megapage offset.
@@ -27,6 +25,7 @@ volatile uint32_t *cfg_reg_icache_mode = (volatile uint32_t *) 0x200204;
 #define PAGE_PERMS_USER_NOEXEC (PAGE_PERMS_USER_ALL & ~(uint64_t)PTE_X & ~(uint64_t)PTE_W & ~(uint64_t)PTE_R)
 
 #define FAULT_MAGIC 0x8BADF00D
+
 
 struct fault_info_t {
   uint64_t pc;
@@ -173,7 +172,6 @@ uint64_t execute_test_gadget(uint64_t gadget_address) {
 
 void execute_and_expect_fault(uint64_t gadget_address, uint64_t expected_pc, uint64_t expected_cause, uint64_t expected_val) {
   uint64_t result = execute_test_gadget(gadget_address);
-  // terminate(-1);
 
   // verify that fault was triggered -- trap handler returns magic value to
   // indicate it triggered a trap
@@ -201,7 +199,6 @@ void execute_and_expect_fault(uint64_t gadget_address, uint64_t expected_pc, uin
     bp_print_string("\tgot      ");
     bp_hprint_uint64(latest_fault_info.cause);
     bp_cprint('\n');
-
 
     bp_print_string("stval:\n");
     bp_print_string("\texpected ");
@@ -252,9 +249,6 @@ void execute_and_expect_success(uint64_t gadget_address) {
 }
 
 void run_test() {
-  // TODO: yet another mindless fencei 
-  asm volatile ("fence.i");
-
   execute_and_expect_success(test_0_aligned_execution_across_page_boundary_gadget_address);
   execute_and_expect_success(test_1_misaligned_within_single_page_gadget_address);
   execute_and_expect_success(test_2_misaligned_execution_across_page_boundary_gadget_address);
@@ -284,8 +278,14 @@ void run_test() {
     test_7_access_fault_first_half_only
   );
 
-  // TODO
-  terminate(0); // temp
+  // // TODO
+  // terminate(0); // temp
+  asm volatile("li a0, 1");
+  asm volatile("li a1, 1");
+  asm volatile("ecall");
+
+  bp_print_string("All tests passed\n");
+  terminate(0);
 }
 
 
@@ -318,11 +318,27 @@ void place_end_instructions(uint64_t vaddr) {
   place_instruction(vaddr+4, 0x00008067); // ret
 }
 
+void handle_u_ecall(uint64_t arg) {
+  if (arg == 1) {
+    bp_print_string("Setting I$ to cached mode (default)\n");
+    // Set I$ mode to cached (default)
+    *cfg_reg_icache_mode = 1;
+    flush_tlb();
+  } else if (arg == 2) {
+    bp_print_string("Setting I$ to nonspec mode\n");
+    // Set I$ mode to nonspeculative
+    *cfg_reg_icache_mode = 2;
+    flush_tlb();
+  } else {
+    bp_hprint_uint64(arg);
+    bp_panic("Unknown ECALL arg");
+  }
+}
 
 int main(int argc, char** argv) {
 
   map_code_page();
-  map_cfg_page(); // TODO: might not use
+  map_cfg_page();
 
   map_test_pair(0, PAGE_PERMS_USER_ALL, PAGE_PERMS_USER_ALL);
   place_dummy_instruction(test_0_aligned_execution_across_page_boundary_gadget_address);
@@ -362,16 +378,6 @@ int main(int argc, char** argv) {
   flush_tlb();
   *cfg_reg_icache_mode = 2;
 
-  // x TLB miss both halves
-  // x TLB miss second half only
-  // x TLB miss first half only
-  // x miss and fault on both halves
-  // miss and fault on first half only
-  // miss and fault on second half only
-  // faults but pre-loaded
-
-  // nonspec I$ with misses involved in the above
-
   uint64_t stack_start = DRAM_BASE + MPGSIZE - 0x100;
 
   trapframe_t tf;
@@ -380,5 +386,6 @@ int main(int argc, char** argv) {
   tf.gpr[2] = stack_start; // sp
   pop_tf(&tf);
 
-  return 99;
+  bp_print_string("returned\n");
+  return 0;
 }

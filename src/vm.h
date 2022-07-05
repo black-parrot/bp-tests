@@ -37,7 +37,8 @@
 #define flush_tlb() asm volatile ("sfence.vma")
 
 #define terminate(code)             \
-  asm volatile("mv a0, %0\n\t"      \
+  asm volatile("li a1, 0\n\t"       \
+               "mv a0, %0\n\t"      \
                "ecall\n\t"          \
                ::"r" ((int)(code)):)
 
