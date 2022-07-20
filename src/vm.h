@@ -36,11 +36,14 @@
 
 #define flush_tlb() asm volatile ("sfence.vma")
 
+// Syscall interface, trap handled in vm_start.S. a0 is argument to call, a1 is
+// syscall number. Syscall 0 is bp_finish.
 #define terminate(code)             \
   asm volatile("li a1, 0\n\t"       \
                "mv a0, %0\n\t"      \
                "ecall\n\t"          \
-               ::"r" ((int)(code)):)
+               ::"r" ((int)(code))  \
+               :"%a0", "%a1")
 
 typedef struct
 {
