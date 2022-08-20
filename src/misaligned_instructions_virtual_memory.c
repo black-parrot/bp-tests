@@ -46,7 +46,7 @@ return to machine mode.
 Function names are prefixed with the privilege level in which they are intended to be used.
 */
 
-volatile uint32_t *cfg_reg_icache_mode = (volatile uint32_t *) 0x200204;
+volatile uint32_t *cfg_reg_icache_mode = (volatile uint32_t *) 0x200208;
 
 #define NPT 3
 #define l1pt pt[0]
@@ -69,6 +69,13 @@ volatile uint32_t *cfg_reg_icache_mode = (volatile uint32_t *) 0x200204;
 #define PAGE_PERMS_USER_NOEXEC (PAGE_PERMS_USER_ALL & ~(uint64_t)PTE_X)
 
 #define FAULT_MAGIC 0x8BADF00D
+
+#define s_set_icache_uncached() \
+    asm volatile(      \
+        "li a0, 0\n\t" \
+        "li a1, 1\n\t" \
+        "ecall\n\t"    \
+    )
 
 #define s_set_icache_default() \
     asm volatile(      \
@@ -279,7 +286,7 @@ void u_run_test_pass() {
     u_execute_and_expect_success(test_2_misaligned_execution_across_page_boundary_gadget_address);
     u_execute_and_expect_success(test_3_tlb_miss_both_halves_gadget_address);
 
-    // // Execute test 4 "secondary" gadget first to prime ITLB and I$
+    // Execute test 4 "secondary" gadget first to prime ITLB and I$
     u_execute_and_expect_success(test_4_tlb_miss_first_half_only_secondary_gadget_address);
     u_execute_and_expect_success(test_4_tlb_miss_first_half_only_primary_gadget_address);
 
@@ -313,6 +320,10 @@ void u_test_main() {
     s_set_icache_nonspec();
     u_run_test_pass();
 
+    bp_print_string("Re-running test suite in uncached mode...\n");
+    s_set_icache_uncached();
+    u_run_test_pass();
+
     s_set_icache_default();
 
     bp_print_string("All tests passed\n");
@@ -321,16 +332,24 @@ void u_test_main() {
 
 // Trap handler invoked by vm_start.S in response to an ECALL from U-mode
 void handle_u_ecall(uint64_t arg) {
-    if (arg == 1) {
+    if (arg == 0) {
+        bp_print_string("Setting I$ to UNcached mode\n");
+        // Set I$ mode to uncached
+        *cfg_reg_icache_mode = 0;
+        flush_tlb();
+        flush_icache();
+    } else if (arg == 1) {
         bp_print_string("Setting I$ to cached mode (default)\n");
         // Set I$ mode to cached (default)
         *cfg_reg_icache_mode = 1;
         flush_tlb();
+        flush_icache();
     } else if (arg == 2) {
         bp_print_string("Setting I$ to nonspec mode\n");
         // Set I$ mode to nonspeculative
         *cfg_reg_icache_mode = 2;
         flush_tlb();
+        flush_icache();
     } else {
         bp_hprint_uint64(arg);
         bp_panic("Unknown ECALL arg");
