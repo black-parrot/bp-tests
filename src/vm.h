@@ -35,6 +35,7 @@
 #define vpn2(va) (((va) >> (PGSHIFT + 2*PGLEVELBITS)) % PTES_PER_PT)
 
 #define flush_tlb() asm volatile ("sfence.vma")
+#define flush_icache() asm volatile ("fence.i")
 
 // Syscall interface, trap handled in vm_start.S. a0 is argument to call, a1 is
 // syscall number. Syscall 0 is bp_finish.

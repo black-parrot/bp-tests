@@ -10,13 +10,15 @@ This application tests:
     - Execution of misaligned instructions when one or both halves fault or raise an exception
     - Handling of exception data (*tval, *epc) when misaligned instructions trigger a trap
 
-It runs a sequence of scenarios first in the default chip configuration and then again with the
-insruction cache configured for "non-speculative" mode -- i.e., every miss travels through the
-backend and is committed before the fill is serviced from memory.
+It runs a sequence of scenarios first in the default chip configuration, then again with the
+insruction cache configured for two alternative modes:
+- "non-speculative" mode: every miss travels through the backend and is committed before the fill is
+  serviced from memory.
+- uncached mode: every request round-trips to memory
 
 ITLB and I$ fills are likely sources of bugs when handling misaligned instructions because these
 instructions require two fetches to be issued. One or both halves may trigger an exception and in
-such a case both halves must be re-fetched.
+such a case the frontend must resume part-way through an instruction fetch.
 
 The application configures a virtual memory environment in which the necessary code and data are
 mapped in a sensible default location. For each test case to be run, a pair of pages is allocated
