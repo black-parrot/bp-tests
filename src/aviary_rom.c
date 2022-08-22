@@ -87,6 +87,7 @@ int main(uint64_t argc, char * argv[]) {
     if (bp_param_get(PARAM_FE_CMD_FIFO_ELS)   != 4) return -1;
     if (bp_param_get(PARAM_MULDIV_SUPPORT)    != 3) return -1;
     if (bp_param_get(PARAM_FPU_SUPPORT)       != 1) return -1;
+    if (bp_param_get(PARAM_COMPRESSED_SUPPORT)!= 1) return -1;
 
     if (bp_param_get(PARAM_ASYNC_COH_CLK)       != 0  ) return -1;
     if (bp_param_get(PARAM_COH_NOC_FLIT_WIDTH)  != 128) return -1;
