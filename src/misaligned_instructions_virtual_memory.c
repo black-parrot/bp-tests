@@ -72,26 +72,29 @@ volatile uint32_t *cfg_reg_icache_mode = (volatile uint32_t *) 0x200208;
 
 #define FAULT_MAGIC 0x8BADF00D
 
-#define s_set_icache_uncached() \
-    asm volatile(      \
-        "li a0, 0\n\t" \
-        "li a1, 1\n\t" \
-        "ecall\n\t"    \
-    )
+void s_set_icache_uncached() {
+    asm volatile(
+        "li a0, 0\n\t"
+        "li a1, 1\n\t"
+        "ecall\n\t"
+    );
+}
 
-#define s_set_icache_default() \
-    asm volatile(      \
-        "li a0, 1\n\t" \
-        "li a1, 1\n\t" \
-        "ecall\n\t"    \
-    )
+void s_set_icache_default() {
+    asm volatile(
+        "li a0, 1\n\t"
+        "li a1, 1\n\t"
+        "ecall\n\t"
+    );
+}
 
-#define s_set_icache_nonspec() \
-    asm volatile(      \
-        "li a0, 2\n\t" \
-        "li a1, 1\n\t" \
-        "ecall\n\t"    \
-    )
+void s_set_icache_nonspec() {
+    asm volatile(
+        "li a0, 2\n\t"
+        "li a1, 1\n\t"
+        "ecall\n\t"
+    );
+}
 
 struct fault_info_t {
     uint64_t pc;
@@ -332,7 +335,7 @@ void u_test_main() {
     terminate(0);
 }
 
-// Trap handler invoked by vm_start.S in response to an ECALL from U-mode
+// Trap handler invoked by vm_start.S in response to an ECALL from U-mode. Executes in M-mode.
 void handle_u_ecall(uint64_t arg) {
     if (arg == 0) {
         bp_print_string("Setting I$ to UNcached mode\n");
