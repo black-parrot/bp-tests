@@ -346,7 +346,7 @@ void u_test_main() {
 }
 
 // Trap handler invoked by vm_start.S in response to an ECALL from U-mode. Executes in M-mode.
-void handle_u_ecall(uint64_t arg) {
+void m_handle_u_ecall(uint64_t arg) {
     if (arg == 0) {
         bp_print_string("Setting I$ to UNcached mode\n");
         // Set I$ mode to uncached
