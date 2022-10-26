@@ -72,11 +72,19 @@ volatile uint32_t *cfg_reg_icache_mode = (volatile uint32_t *) 0x200208;
 
 #define FAULT_MAGIC 0x8BADF00D
 
+// Too lazy to implement a proper trap entry/exit, so we have the compiler handle it at the call site
+#define CLOBBER_ALL_REGISTERS \
+     "x1", /*sp*/  "x3",  "x4",  "x5",  "x6",  "x7", /*fp*/\
+     "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16",\
+    "x17", "x18", "x19", "x20", "x21", "x22", "x23", "x24",\
+    "x25", "x26", "x27", "x28", "x29", "x30", "x31"\
+
 void s_set_icache_uncached() {
     asm volatile(
         "li a0, 0\n\t"
         "li a1, 1\n\t"
         "ecall\n\t"
+        ::: CLOBBER_ALL_REGISTERS
     );
 }
 
@@ -85,6 +93,7 @@ void s_set_icache_default() {
         "li a0, 1\n\t"
         "li a1, 1\n\t"
         "ecall\n\t"
+        ::: CLOBBER_ALL_REGISTERS
     );
 }
 
@@ -93,6 +102,7 @@ void s_set_icache_nonspec() {
         "li a0, 2\n\t"
         "li a1, 1\n\t"
         "ecall\n\t"
+        ::: CLOBBER_ALL_REGISTERS
     );
 }
 
