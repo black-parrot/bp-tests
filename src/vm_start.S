@@ -10,7 +10,7 @@
   .align 2
 _start:
   /* Setup trap handler */
-  la t0, trap_vector
+  la t0, m_trap_vector
   csrw mtvec, t0
   /* Setup stack pointer */
   li sp, STACK_TOP - SIZEOF_TRAPFRAME_T
@@ -49,16 +49,42 @@ _start:
   addi x31, x0, 0
   j main
 
-
+// Test programs can override m_handle_u_ecall to implement custom M-mode syscalls.
+// a1 is used as syscall number: 0 is bp_finish, others defer to m_handle_u_ecall.
+// m_handle_u_ecall must correctly save and restore callee-saved regs.
   .align 2
-trap_vector:
+  .weak m_handle_u_ecall
+m_handle_u_ecall:
+  // default ecall handler: bp_finish
+  j bp_finish
+
+// Machine-mode trap handler
+  .align 2
+m_trap_vector:
   csrrw sp, mscratch, sp
   STORE t0,5*REGBYTES(sp)
   STORE t1,6*REGBYTES(sp)
+
+  // Defer to perch's handler if not an ECALL
   li t0, 8
   csrr t1, mcause
   bne t0, t1, 1f
-  j bp_finish
+
+  // use a1 for syscall number; 0 is finish, anything else defers to m_handle_u_ecall weak symbol
+  beqz a1, bp_finish
+
+  call m_handle_u_ecall
+
+  // return to ECALL site after handling
+  csrr t0, mepc
+  addi t0, t0, 4
+  csrw mepc, t0
+
+  LOAD t0,5*REGBYTES(sp)
+  LOAD t1,6*REGBYTES(sp)
+  csrrw sp, mscratch, sp
+  mret
+
 1:
   LOAD t0,5*REGBYTES(sp)
   LOAD t1,6*REGBYTES(sp)

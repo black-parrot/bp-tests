@@ -28,6 +28,10 @@ BP_TESTS_C = \
   dram_stress           \
   misaligned_ldst       \
   nanboxing             \
+  misaligned_instructions_basic_jumps \
+  misaligned_instructions_advanced_jumps \
+  misaligned_instructions_virtual_memory \
+  execute_dynamic_instruction \
 
 BP_MULTICORE_TESTS_C = \
   mc_sanity             \

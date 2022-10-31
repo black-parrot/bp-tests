@@ -17,8 +17,8 @@
 #define CAUSE_LOAD_PAGE_FAULT     0xd
 #define CAUSE_STORE_PAGE_FAULT    0xf
 
-#define PTE_S_LEAF PTE_V | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D
-#define PTE_U_LEAF PTE_V | PTE_U | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D
+#define PTE_S_LEAF (PTE_V | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D)
+#define PTE_U_LEAF (PTE_V | PTE_U | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D)
 
 #define PGSHIFT       12
 #define PTE_PPN_SHIFT 10
@@ -30,16 +30,21 @@
 
 #define DRAM_BASE      0x80000000
 
-#define vpn0(va) ((va >> PGSHIFT) % PTES_PER_PT)
-#define vpn1(va) ((va >> (PGSHIFT + PGLEVELBITS)) % PTES_PER_PT)
-#define vpn2(va) ((va >> (PGSHIFT + 2*PGLEVELBITS)) % PTES_PER_PT)
+#define vpn0(va) (((va) >> PGSHIFT) % PTES_PER_PT)
+#define vpn1(va) (((va) >> (PGSHIFT + PGLEVELBITS)) % PTES_PER_PT)
+#define vpn2(va) (((va) >> (PGSHIFT + 2*PGLEVELBITS)) % PTES_PER_PT)
 
 #define flush_tlb() asm volatile ("sfence.vma")
+#define flush_icache() asm volatile ("fence.i")
 
+// Syscall interface, trap handled in vm_start.S. a0 is argument to call, a1 is
+// syscall number. Syscall 0 is bp_finish.
 #define terminate(code)             \
-  asm volatile("mv a0, %0\n\t"      \
+  asm volatile("li a1, 0\n\t"       \
+               "mv a0, %0\n\t"      \
                "ecall\n\t"          \
-               ::"r" ((int)(code)):)
+               ::"r" ((int)(code))  \
+               :"%a0", "%a1")
 
 typedef struct
 {
