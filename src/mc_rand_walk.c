@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include "bp_utils.h"
 #include "mc_util.h"
-#include "aviary.h"
+#include "bp_aviary.h"
 
 // maximum number of simulation epochs
 #ifndef MAX_EPOCHS

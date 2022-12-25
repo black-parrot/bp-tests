@@ -23,7 +23,7 @@
 #include <stdint.h>
 #include "bp_utils.h"
 #include "mc_util.h"
-#include "aviary.h"
+#include "bp_aviary.h"
 
 #ifndef MATRIX_SIZE
 #define MATRIX_SIZE 8192

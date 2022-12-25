@@ -16,7 +16,7 @@
 #include "bp_utils.h"
 #include "mc_util.h"
 #include "mc_data.h"
-#include "aviary.h"
+#include "bp_aviary.h"
 
 // DATA_LEN define from "mc_data.h" gives total number of elements in DATA array
 

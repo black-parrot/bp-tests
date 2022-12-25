@@ -1,7 +1,7 @@
 #ifndef VDP_H
 #define VDP_H
 #include <stdint.h>
-#include "aviary.h"
+#include "bp_aviary.h"
 
 ////////////////////////////////BP-CONFIG///////////////////////////////////
 #define BP_CONFIG (bp_param_get(PARAM_CC_X_DIM)*bp_param_get(PARAM_CC_Y_DIM))

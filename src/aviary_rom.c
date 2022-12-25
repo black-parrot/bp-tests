@@ -1,6 +1,6 @@
 
 #include "bp_utils.h"
-#include "aviary.h"
+#include "bp_aviary.h"
 
 // This test verifies that we can read from the aviary ROM, provided by the
 //   BlackParrot environment. It is hardcoded to the default unicore configuration
