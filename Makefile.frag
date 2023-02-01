@@ -32,6 +32,7 @@ BP_TESTS_C = \
   misaligned_instructions_advanced_jumps \
   misaligned_instructions_virtual_memory \
   execute_dynamic_instruction \
+  fp_precision          \
 
 BP_MULTICORE_TESTS_C = \
   mc_sanity             \
