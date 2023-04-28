@@ -1,8 +1,6 @@
 #include "bp_utils.h"
 
-/* this tests floating point accumulations.
-   this can be useful to detect precision mismatches
-   of SP (float) operations in DP (double) elements */
+/* this tests FMA with a few regression cases */
 
 void main(uint64_t argc, char *argv[]) {
   float  f[4] = {0.0, -0.0, 0.5, -0.2};
