@@ -1,8 +1,8 @@
 #include "bp_utils.h"
 #include "math.h"
 
-/* this tests FMA with a few regression cases.
-  use with Draomjo cosimulation for finding mismatches, if any.
+/* tests FMA with a few regression cases.
+  use with Dromajo cosimulation for finding mismatches, if any.
   the assertions do not guarantee functional correctness */
 
 void main(uint64_t argc, char *argv[]) {
