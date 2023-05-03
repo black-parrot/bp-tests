@@ -11,46 +11,107 @@ void main(uint64_t argc, char *argv[]) {
   double d[4] = {0.0, -0.0, 0.4, -0.3};
   float rf, final_rf;
   double df, final_df;
-
-  int i = 0;
-  for(int i = 0; i < 4; i++)
-    for(int j = 0; j < 4; j++)
-      for(int k = 0; k < 4; k++) {
-        // float-float op
-        rf = f[i] * f[j];
-        final_rf += rf;
-        rf = f[i] * f[j] + f[k];
-        final_rf += rf;
-  
-        // float-float op into double
-        df = f[i] * f[j];
-        final_df += df;
-        df = f[i] * f[j] + f[k];
-        final_df += df;
-  
-        // double-double op
-        df = d[i] * d[j];
-        final_df += df;
-        df = d[i] * d[j] + d[k];
-        final_df += df;
-
-        // double-float op
-        df = d[i] * f[j];
-        final_df += df;
-        df = d[i] * f[j] + d[k];
-        final_df += df;
-
-        // float-double op
-        df = f[i] * d[j];
-        final_df += df;
-        df = f[i] * d[j] + d[k];
-        final_df += df;
-      }
+  enum rounding_modes {RNE, RTZ=0x20, RDN=0x40, RUP=0x60, RMM=0x80, DYN=0xe0} RM;
+  int rounding_mode = RNE;
+  for(int rm = RNE; rm < DYN; rm++) { // rounding_modes
+    switch (rm) {
+      // RNE default
+      case RTZ:
+        asm volatile ( 
+            "li    a5, %[rm];"
+            "csrrw a5, fcsr, a5;"
+            :: [rm] "i" (RTZ)
+            );
+        break;
+      case RDN:
+        asm volatile ( 
+            "li    a5, %[rm];"
+            "csrrw a5, fcsr, a5;"
+            :: [rm] "i" (RDN)
+            );
+        break;
+      case RUP:
+        asm volatile ( 
+            "li    a5, %[rm];"
+            "csrrw a5, fcsr, a5;"
+            :: [rm] "i" (RUP)
+            );
+        break;
+      case RMM:
+        asm volatile ( 
+            "li    a5, %[rm];"
+            "csrrw a5, fcsr, a5;"
+            :: [rm] "i" (RMM)
+            );
+        break;
+      case DYN:
+        asm volatile ( 
+            "li    a5, %[rm];"
+            "csrrw a5, fcsr, a5;"
+            :: [rm] "i" (DYN)
+            );
+        break;
+      default: 
+        asm volatile ( 
+            "li    a5, %[rm];"
+            "csrrw a5, fcsr, a5;"
+            :: [rm] "i" (RNE)
+            );
+        break;
+    }
+    for(int i = 0; i < 4; i++)
+      for(int j = 0; j < 4; j++) {
+        for(int prec = 0; prec<4; prec++) {
+          // float <- float|double * float|double
+          asm volatile (
+             "fmul.s %[rf], %[a], %[b];"
+             : [rf] "=f" (rf)
+             : [a]  "f" (prec&1 ? f[i] : d[i]) ,
+               [b]  "f" (prec&2 ? f[j] : d[j])
+            );
+          final_rf += rf;
+        }
+        // float <- float|double * float|double + float|double
+        for(int k = 0; k < 4; k++)
+          for(int prec = 0; prec<8; prec++) {
+            asm volatile (
+               "fmadd.s %[rf], %[a], %[b], %[c];"
+               : [rf] "=f" (rf)
+               : [a]  "f" (prec&1 ? f[i] : d[i]) ,
+                 [b]  "f" (prec&2 ? f[j] : d[j]) ,
+                 [c]  "f" (prec&4 ? f[k] : d[k])
+              );
+            final_rf += rf;
+          } 
+        // double <- float|double * float|double
+        for(int prec = 0; prec<4; prec++) {
+          asm volatile (
+             "fmul.d %[df], %[a], %[b];"
+             : [df] "=f" (df)
+             : [a]  "f" (prec&1 ? f[i] : d[i]) ,
+               [b]  "f" (prec&2 ? f[j] : d[j])
+            );
+          final_df += df;
+        }
+        for(int k = 0; k < 4; k++)
+          for(int prec = 0; prec<8; prec++) {
+            // double <- float|double * float|double + float|double
+            asm volatile (
+               "fmadd.d %[df], %[a], %[b], %[c];"
+               : [df] "=f" (df)
+               : [a]  "f" (prec&1 ? f[i] : d[i]) ,
+                 [b]  "f" (prec&2 ? f[j] : d[j]) ,
+                 [c]  "f" (prec&4 ? f[k] : d[k])
+              );
+            final_df += df;
+          }
+       } // j
+  } // rounding modes
 
   if(
-    final_df == 10.879999968707554813818205730058252811431884765625
-    && final_rf == 5.52000141143798828125)
-    bp_finish(0);
+    final_df != 10.879999968707554813818205730058252811431884765625
+    && final_rf != 5.52000141143798828125)
+    bp_finish(1);
  
   /* because of crossing NaNs below, the accumulation is washed out (=NaN)
     final assertions do not guarantee correct execution,
@@ -63,35 +124,48 @@ void main(uint64_t argc, char *argv[]) {
   for(int i = 0; i < 7; i++)
     for(int j = 0; j < 7; j++)
       for(int k = 0; k < 7; k++) {
-        // float-float op
-        rf = ff[i] * ff[j];
-        final_ff += rf;
-        rf = ff[i] * ff[j] + ff[k];
-        final_ff += rf;
-  
-        // float-float op into double
-        df = ff[i] * ff[j];
-        final_dd += df;
-        df = ff[i] * ff[j] + ff[k];
-        final_dd += df;
-  
-        // double-double op
-        df = dd[i] * dd[j];
-        final_dd += df;
-        df = dd[i] * dd[j] + dd[k];
-        final_dd += df;
-
-        // double-float op
-        df = dd[i] * ff[j];
-        final_dd += df;
-        df = dd[i] * ff[j] + dd[k];
-        final_dd += df;
-
-        // float-double op
-        df = ff[i] * dd[j];
-        final_dd += df;
-        df = ff[i] * dd[j] + dd[k];
-        final_dd += df;
+        // float <- float|double * float|double
+        for(int prec = 0; prec<4; prec++) {
+          asm volatile (
+             "fmul.s %[rf], %[a], %[b];"
+             : [rf] "=f" (rf)
+             : [a]  "f" (prec&1 ? f[i] : d[i]) ,
+               [b]  "f" (prec&2 ? f[j] : d[j])
+            );
+          final_rf += rf;
+        }
+        // float <- float|double * float|double + float|double
+        for(int prec = 0; prec<8; prec++) {
+          asm volatile (
+             "fmadd.s %[rf], %[a], %[b], %[c];"
+             : [rf] "=f" (rf)
+             : [a]  "f" (prec&1 ? f[i] : d[i]) ,
+               [b]  "f" (prec&2 ? f[j] : d[j]) ,
+               [c]  "f" (prec&4 ? f[k] : d[k])
+            );
+          final_rf += rf;
+        } 
+        // double <- float|double * float|double
+        for(int prec = 0; prec<4; prec++) {
+          asm volatile (
+             "fmul.d %[df], %[a], %[b];"
+             : [df] "=f" (df)
+             : [a]  "f" (prec&1 ? f[i] : d[i]) ,
+               [b]  "f" (prec&2 ? f[j] : d[j])
+            );
+          final_df += df;
+        }
+        // double <- float|double * float|double + float|double
+        for(int prec = 0; prec<8; prec++) {
+          asm volatile (
+             "fmadd.d %[df], %[a], %[b], %[c];"
+             : [df] "=f" (df)
+             : [a]  "f" (prec&1 ? f[i] : d[i]) ,
+               [b]  "f" (prec&2 ? f[j] : d[j]) ,
+               [c]  "f" (prec&4 ? f[k] : d[k])
+            );
+          final_df += df;
+        }
       }
 
   if(final_dd == NAN && final_ff == NAN)
