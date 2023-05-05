@@ -5,59 +5,63 @@
   use with Dromajo cosimulation for finding mismatches, if any.
   the assertions do not guarantee functional correctness */
 
+void set_rounding_mode(int r) {
+  enum rounding_modes {RNE, RTZ=0x20, RDN=0x40, RUP=0x60, RMM=0x80, DYN=0xe0} RM;
+  switch (r) {
+    // RNE default
+    case 0:
+      asm volatile (
+          "li    a5, %[rm];"
+          "csrrw a5, fcsr, a5;"
+          :: [rm] "i" (RTZ)
+          );
+      break;
+    case 1:
+      asm volatile (
+          "li    a5, %[rm];"
+          "csrrw a5, fcsr, a5;"
+          :: [rm] "i" (RDN)
+          );
+      break;
+      case 2:
+        asm volatile (
+            "li    a5, %[rm];"
+            "csrrw a5, fcsr, a5;"
+            :: [rm] "i" (RUP)
+            );
+        break;
+      case 3:
+        asm volatile (
+            "li    a5, %[rm];"
+            "csrrw a5, fcsr, a5;"
+            :: [rm] "i" (RMM)
+            );
+        break;
+      case 4:
+        asm volatile (
+            "li    a5, %[rm];"
+            "csrrw a5, fcsr, a5;"
+            :: [rm] "i" (DYN)
+            );
+        break;
+    default:
+      asm volatile (
+          "li    a5, %[rm];"
+          "csrrw a5, fcsr, a5;"
+          :: [rm] "i" (RNE)
+          );
+      break;
+  }
+}
+
 void main(uint64_t argc, char *argv[]) {
   // this part doesn't wash out the accumulations
   float  f[4] = {0.0, -0.0, 0.5, -0.2};
   double d[4] = {0.0, -0.0, 0.4, -0.3};
   float rf, final_rf;
   double df, final_df;
-  enum rounding_modes {RNE, RTZ=0x20, RDN=0x40, RUP=0x60, RMM=0x80, DYN=0xe0} RM;
-  for(int rm = 0; rm < 2; rm++) { // rounding_modes
-    switch (rm) {
-      // RNE default
-      case 0:
-        asm volatile ( 
-            "li    a5, %[rm];"
-            "csrrw a5, fcsr, a5;"
-            :: [rm] "i" (RTZ)
-            );
-        break;
-      case 1:
-        asm volatile ( 
-            "li    a5, %[rm];"
-            "csrrw a5, fcsr, a5;"
-            :: [rm] "i" (RDN)
-            );
-        break;
-//      case 2:
-//        asm volatile ( 
-//            "li    a5, %[rm];"
-//            "csrrw a5, fcsr, a5;"
-//            :: [rm] "i" (RUP)
-//            );
-//        break;
-//      case 3:
-//        asm volatile ( 
-//            "li    a5, %[rm];"
-//            "csrrw a5, fcsr, a5;"
-//            :: [rm] "i" (RMM)
-//            );
-//        break;
-//      case 4:
-//        asm volatile ( 
-//            "li    a5, %[rm];"
-//            "csrrw a5, fcsr, a5;"
-//            :: [rm] "i" (DYN)
-//            );
-//        break;
-      default: 
-        asm volatile ( 
-            "li    a5, %[rm];"
-            "csrrw a5, fcsr, a5;"
-            :: [rm] "i" (RNE)
-            );
-        break;
-    }
+  for(int r = 0; r < 2; r++) { // rounding_modes
+    set_rounding_mode(r);
     for(int i = 0; i < 4; i++)
       for(int j = 0; j < 4; j++) {
         for(int prec = 0; prec<4; prec++) {
@@ -104,7 +108,7 @@ void main(uint64_t argc, char *argv[]) {
               );
             final_df += df;
           }
-       } // j
+      } // j
   } // rounding modes
 
   if(
@@ -120,9 +124,10 @@ void main(uint64_t argc, char *argv[]) {
   double dd[7] = {0.0, -0.0, 0.4, -0.3, INFINITY, -INFINITY, NAN};
   float  final_ff;
   double final_dd;
-  for(int i = 0; i < 7; i++)
-    for(int j = 0; j < 7; j++)
-      for(int k = 0; k < 7; k++) {
+  for(int r = 0; r < 2; r++) { // rounding_modes
+    set_rounding_mode(r);
+    for(int i = 0; i < 7; i++)
+      for(int j = 0; j < 7; j++) {
         // float <- float|double * float|double
         for(int prec = 0; prec<4; prec++) {
           asm volatile (
@@ -134,16 +139,17 @@ void main(uint64_t argc, char *argv[]) {
           final_rf += rf;
         }
         // float <- float|double * float|double + float|double
-        for(int prec = 0; prec<8; prec++) {
-          asm volatile (
-             "fmadd.s %[rf], %[a], %[b], %[c];"
-             : [rf] "=f" (rf)
-             : [a]  "f" (prec&1 ? f[i] : d[i]) ,
-               [b]  "f" (prec&2 ? f[j] : d[j]) ,
-               [c]  "f" (prec&4 ? f[k] : d[k])
-            );
-          final_rf += rf;
-        } 
+        for(int k = 0; k < 7; k++)
+          for(int prec = 0; prec<8; prec++) {
+            asm volatile (
+               "fmadd.s %[rf], %[a], %[b], %[c];"
+               : [rf] "=f" (rf)
+               : [a]  "f" (prec&1 ? f[i] : d[i]) ,
+                 [b]  "f" (prec&2 ? f[j] : d[j]) ,
+                 [c]  "f" (prec&4 ? f[k] : d[k])
+              );
+            final_rf += rf;
+          } 
         // double <- float|double * float|double
         for(int prec = 0; prec<4; prec++) {
           asm volatile (
@@ -155,17 +161,19 @@ void main(uint64_t argc, char *argv[]) {
           final_df += df;
         }
         // double <- float|double * float|double + float|double
-        for(int prec = 0; prec<8; prec++) {
-          asm volatile (
-             "fmadd.d %[df], %[a], %[b], %[c];"
-             : [df] "=f" (df)
-             : [a]  "f" (prec&1 ? f[i] : d[i]) ,
-               [b]  "f" (prec&2 ? f[j] : d[j]) ,
-               [c]  "f" (prec&4 ? f[k] : d[k])
-            );
-          final_df += df;
-        }
-      }
+        for(int k = 0; k < 7; k++)
+          for(int prec = 0; prec<8; prec++) {
+            asm volatile (
+               "fmadd.d %[df], %[a], %[b], %[c];"
+               : [df] "=f" (df)
+               : [a]  "f" (prec&1 ? f[i] : d[i]) ,
+                 [b]  "f" (prec&2 ? f[j] : d[j]) ,
+                 [c]  "f" (prec&4 ? f[k] : d[k])
+              );
+            final_df += df;
+          }
+      } // j
+  } // rounding_mode
 
   if(final_dd == NAN && final_ff == NAN)
     bp_finish(0);
