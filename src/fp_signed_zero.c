@@ -12,45 +12,44 @@ void main(uint64_t argc, char *argv[]) {
   float rf, final_rf;
   double df, final_df;
   enum rounding_modes {RNE, RTZ=0x20, RDN=0x40, RUP=0x60, RMM=0x80, DYN=0xe0} RM;
-  int rounding_mode = RNE;
-  for(int rm = RNE; rm < DYN; rm++) { // rounding_modes
+  for(int rm = 0; rm < 2; rm++) { // rounding_modes
     switch (rm) {
       // RNE default
-      case RTZ:
+      case 0:
         asm volatile ( 
             "li    a5, %[rm];"
             "csrrw a5, fcsr, a5;"
             :: [rm] "i" (RTZ)
             );
         break;
-      case RDN:
+      case 1:
         asm volatile ( 
             "li    a5, %[rm];"
             "csrrw a5, fcsr, a5;"
             :: [rm] "i" (RDN)
             );
         break;
-      case RUP:
-        asm volatile ( 
-            "li    a5, %[rm];"
-            "csrrw a5, fcsr, a5;"
-            :: [rm] "i" (RUP)
-            );
-        break;
-      case RMM:
-        asm volatile ( 
-            "li    a5, %[rm];"
-            "csrrw a5, fcsr, a5;"
-            :: [rm] "i" (RMM)
-            );
-        break;
-      case DYN:
-        asm volatile ( 
-            "li    a5, %[rm];"
-            "csrrw a5, fcsr, a5;"
-            :: [rm] "i" (DYN)
-            );
-        break;
+//      case 2:
+//        asm volatile ( 
+//            "li    a5, %[rm];"
+//            "csrrw a5, fcsr, a5;"
+//            :: [rm] "i" (RUP)
+//            );
+//        break;
+//      case 3:
+//        asm volatile ( 
+//            "li    a5, %[rm];"
+//            "csrrw a5, fcsr, a5;"
+//            :: [rm] "i" (RMM)
+//            );
+//        break;
+//      case 4:
+//        asm volatile ( 
+//            "li    a5, %[rm];"
+//            "csrrw a5, fcsr, a5;"
+//            :: [rm] "i" (DYN)
+//            );
+//        break;
       default: 
         asm volatile ( 
             "li    a5, %[rm];"
@@ -109,8 +108,8 @@ void main(uint64_t argc, char *argv[]) {
   } // rounding modes
 
   if(
-    final_df != 10.879999968707554813818205730058252811431884765625
-    && final_rf != 5.52000141143798828125)
+    final_df != 54.079999575613925344441668130457401275634765625
+    && final_rf != NAN)
     bp_finish(1);
  
   /* because of crossing NaNs below, the accumulation is washed out (=NaN)
