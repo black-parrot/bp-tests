@@ -28,6 +28,7 @@ BP_TESTS_C = \
   dram_stress           \
   misaligned_ldst       \
   nanboxing             \
+  FMD_test              \
   misaligned_instructions_basic_jumps \
   misaligned_instructions_advanced_jumps \
   misaligned_instructions_virtual_memory \
