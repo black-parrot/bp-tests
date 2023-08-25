@@ -29,6 +29,7 @@ BP_TESTS_C = \
   misaligned_ldst       \
   nanboxing             \
   FMD_test              \
+  M_Extension_Test      \
   misaligned_instructions_basic_jumps \
   misaligned_instructions_advanced_jumps \
   misaligned_instructions_virtual_memory \
