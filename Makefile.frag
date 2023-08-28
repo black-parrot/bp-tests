@@ -32,6 +32,7 @@ BP_TESTS_C = \
   misaligned_instructions_advanced_jumps \
   misaligned_instructions_virtual_memory \
   execute_dynamic_instruction \
+  dma_memcpy            \
 
 BP_MULTICORE_TESTS_C = \
   mc_sanity             \
@@ -56,4 +57,3 @@ BP_TESTS_CPP = \
   map                   \
 
 BP_TESTS = $(BP_TESTS_C) $(BP_MULTICORE_TESTS_C) $(BP_ACCELERATOR_TESTS_C) $(BP_TESTS_CPP)
-
