@@ -8,17 +8,25 @@
 
 volatile uint64_t __attribute__((aligned(64))) global_lock = 0;
 volatile uint64_t __attribute__((aligned(64))) end_barrier_mem = 0;
-uint64_t amo_target __attribute__ ((aligned (64))) = 0;
+volatile uint64_t amo_target __attribute__ ((aligned (64))) = 0;
 
 uint64_t main(uint64_t argc, char * argv[]) {
 
   uint64_t core_id;
   __asm__ volatile("csrr %0, mhartid": "=r"(core_id): :);
 
+  uint32_t num_cores = bp_param_get(PARAM_CC_X_DIM) * bp_param_get(PARAM_CC_Y_DIM);
   int iters = N;
   uint64_t sc_result = 0;
   uint64_t sc_load = 0;
   int i = 0;
+
+  // all cores synchronize at end
+  lock(&global_lock);
+  end_barrier_mem += 1;
+  unlock(&global_lock);
+  while (end_barrier_mem != num_cores) { }
+  if (core_id == 0) end_barrier_mem = 0;
 
   // main loop
   // Execute LR/SC that performs amo_add.d of 1 to amo_target
@@ -44,7 +52,6 @@ uint64_t main(uint64_t argc, char * argv[]) {
 
   // core 0 checks if total in amo_target is equal to number of cores * N
   if (core_id == 0) {
-    uint32_t num_cores = bp_param_get(PARAM_CC_X_DIM) * bp_param_get(PARAM_CC_Y_DIM);
     // core 0 waits for all threads to finish
     // wait for all threads to finish
     while (end_barrier_mem != num_cores) { }
