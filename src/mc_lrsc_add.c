@@ -6,27 +6,17 @@
 // number of iterations for each core to run the main loop
 #define N 500
 
-volatile uint64_t __attribute__((aligned(64))) global_lock = 0;
-volatile uint64_t __attribute__((aligned(64))) end_barrier_mem = 0;
+volatile uint64_t barrier_mem __attribute__((aligned(64))) = 0;
 volatile uint64_t amo_target __attribute__ ((aligned (64))) = 0;
 
 uint64_t main(uint64_t argc, char * argv[]) {
 
-  uint64_t core_id;
-  __asm__ volatile("csrr %0, mhartid": "=r"(core_id): :);
-
-  uint32_t num_cores = bp_param_get(PARAM_CC_X_DIM) * bp_param_get(PARAM_CC_Y_DIM);
   int iters = N;
   uint64_t sc_result = 0;
   uint64_t sc_load = 0;
   int i = 0;
 
-  // all cores synchronize at end
-  lock(&global_lock);
-  end_barrier_mem += 1;
-  unlock(&global_lock);
-  while (end_barrier_mem != num_cores) { }
-  if (core_id == 0) end_barrier_mem = 0;
+  sync_barrier(&barrier_mem);
 
   // main loop
   // Execute LR/SC that performs amo_add.d of 1 to amo_target
@@ -46,23 +36,9 @@ uint64_t main(uint64_t argc, char * argv[]) {
     );
 
   // all cores synchronize at end
-  lock(&global_lock);
-  end_barrier_mem += 1;
-  unlock(&global_lock);
+  sync_barrier(&barrier_mem);
 
-  // core 0 checks if total in amo_target is equal to number of cores * N
-  if (core_id == 0) {
-    // core 0 waits for all threads to finish
-    // wait for all threads to finish
-    while (end_barrier_mem != num_cores) { }
-    uint64_t total = num_cores * N;
-    return (amo_target != total);
-  } else {
-    // cores 1+ report pass and loop forever
-    bp_finish(0);
-    while (1) { }
-  }
-
-  // no core should reach this, return non-zero (error)
-  return 1;
+  uint32_t num_cores = bp_param_get(PARAM_CC_X_DIM) * bp_param_get(PARAM_CC_Y_DIM);
+  uint64_t total = num_cores * N;
+  return (amo_target != total);
 }

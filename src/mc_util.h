@@ -43,7 +43,7 @@ void lock(volatile uint64_t *addr) {
     uint64_t swap_value = 1;
 
     do {
-        __asm__ volatile("amoswap.d %0, %2, (%1)": "=r"(swap_value) 
+        __asm__ __volatile__ ("amoswap.d %0, %2, (%1)": "=r"(swap_value) 
                                                  : "r"(addr), "r"(swap_value)
                                                  :);
     } while (swap_value != 0);
@@ -51,9 +51,26 @@ void lock(volatile uint64_t *addr) {
 
 void unlock(volatile uint64_t *addr) {
     uint64_t swap_value = 0;
-    __asm__ volatile("amoswap.d %0, %2, (%1)": "=r"(swap_value) 
+    __asm__ __volatile__ ("amoswap.d %0, %2, (%1)": "=r"(swap_value) 
                                                  : "r"(addr), "r"(swap_value)
                                                  :);
+}
+
+void sync_barrier(volatile uint64_t *barrier_addr) {
+    __asm__ __volatile__ ("amoadd.d x0, %1, (%0)": : "r"(barrier_addr), "r"(1));
+    uint32_t num_cores = bp_param_get(PARAM_CC_X_DIM) * bp_param_get(PARAM_CC_Y_DIM);
+    while (*barrier_addr != num_cores) { };
+    uint64_t core_id;
+    __asm__ __volatile__ ("csrr %0, mhartid": "=r"(core_id): :);
+    //bp_cprint('b');
+    //bp_cprint('a');
+    //bp_cprint('r');
+    //bp_cprint(' ');
+    //bp_hprint(core_id);
+    //bp_cprint('-');
+    //bp_hprint(num_cores);
+    //bp_cprint('\n');
+    if (core_id == 0) { *barrier_addr = 0; }
 }
 
 #endif
