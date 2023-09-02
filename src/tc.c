@@ -6,8 +6,8 @@
 
 // BERT-1
     #define I 4
-    #define J 768
-    #define K 768
+    #define J 16
+    #define K 16
 
 // BERT-2
 //    #define I 1
@@ -54,7 +54,6 @@ char bp_printf_buf[BP_PRINTF_MAXLEN];
     __asm__ __volatile__ ( \
         ".insn i 0x0b, 0b000, %0, %0, 64\n\t" \
         ".insn i 0x0b, 0b010, %1, %1, 64\n\t" \
-        "nop\n\t" \
         : : "r" (wt), "r" (addr)  \
     );
 
@@ -132,34 +131,34 @@ char bp_printf_buf[BP_PRINTF_MAXLEN];
     ); \
 })
 
-#define USE_FOR_LOOP
-//#define USE_TC
+//#define USE_FOR_LOOP
+#define USE_TC
 
 int main(int argc, char** argv) {
 
     for (int t = 0; t < 2; t++) {
         uint64_t start_cycles = read_csr(mcycle);
 
+            uint32_t *const R_ptr = &result;
+
         #if defined(USE_TC)
-            for (int i = 0; i < I_PRIME; i++) {
-                for (int j = 0; j < J_PRIME; j++) {
+            for (int i = 0; i < I; i++) {
+                for (int j = 0; j < J; j++) {
 
                     //uint32_t a_idx = j + i*J;
 
-                    for (int k = 0; k < K_PRIME / 8; k++) {
+                    for (int k = 0; k < K; k++) {
                         //uint32_t w_idx = k + j*K;
-                        uint32_t r_idx = k + i*K;
+                        uint32_t r_idx = ((uint32_t)R_ptr) + (k + i*K);
 
                         //volatile uint32_t *A_ptr = &A[a_idx];
                         //volatile uint32_t *W_ptr = &W[w_idx];
-                        volatile uint32_t *R_ptr = &result[r_idx];
                         //A_ptr -= 16;
                         //W_ptr -= 16;
 
-                        tensor_csr_st(0, R_ptr);
+                        tensor_csr_st(0, r_idx);
+                        //matmul1(A_ptr, W_ptr);
 
-                        //matmul8(A_ptr, W_ptr);
-                        //
             }}}
 
         #elif defined(USE_FOR_LOOP)
