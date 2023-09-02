@@ -2,35 +2,37 @@
 #include <stdint.h>
 #include "bp_utils.h"
 #include "bp_asm.h"
-
 //#include "bp_dma.h"
 
 // BERT-1
-    #define I 1
+    #define I 4
     #define J 768
     #define K 768
-//
+
 // BERT-2
 //    #define I 1
 //    #define J 3072
 //    #define K 768
-//
+
 // BERT-3
 //    #define I 1
 //    #define J 768
 //    #define K 3072
-//
 
-#define I_PRIME (I / 4)
-#define J_PRIME (J / 4)
-#define K_PRIME (K / 4)
+#define I_SUB_PRIME (4)
+#define J_SUB_PRIME (4)
+#define K_SUB_PRIME (4)
 
-#define BUF_SIZE (1024*1024)
+#define I_PRIME (I+3 / 4)
+#define J_PRIME (J+3 / 4)
+#define K_PRIME (K+3 / 4)
 
-volatile uint32_t A[BUF_SIZE] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {0};
-volatile uint32_t W[BUF_SIZE] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {0};
-volatile uint32_t expected[BUF_SIZE] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {0};
-volatile uint32_t result[BUF_SIZE] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {0};
+#define BUF_SIZE (128*128)
+
+volatile uint32_t A        [BUF_SIZE] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {0};
+volatile uint32_t W        [BUF_SIZE] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {0};
+volatile uint32_t expected [BUF_SIZE] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {0};
+volatile uint32_t result   [BUF_SIZE] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {0};
 
 #define BP_PRINTF_MAXLEN 1024
 
@@ -123,6 +125,9 @@ char bp_printf_buf[BP_PRINTF_MAXLEN];
         "nop\n\t" \
         ".insn i 0x0b, 0b010, %1, %1, 64\n\t" \
         "nop\n\t" \
+        "nop\n\t" \
+        "nop\n\t" \
+        "nop\n\t" \
         : : "r" (wt), "r" (addr)  \
     ); \
 })
@@ -132,28 +137,29 @@ char bp_printf_buf[BP_PRINTF_MAXLEN];
 
 int main(int argc, char** argv) {
 
-    for (int t = 0; t < 1; t++) {
+    for (int t = 0; t < 2; t++) {
         uint64_t start_cycles = read_csr(mcycle);
 
         #if defined(USE_TC)
-            volatile uint32_t *A_ptr = &A;
-            volatile uint32_t *W_ptr = &W;
-
             for (int i = 0; i < I_PRIME; i++) {
-            for (int j = 0; j < J_PRIME; j++) {
-            uint32_t a_idx = j + i*J;
-            for (int k = 0; k < K_PRIME/8; k++) {
-                uint32_t w_idx = k + j*K;
-                uint32_t r_idx = k + i*K;
+                for (int j = 0; j < J_PRIME; j++) {
 
-                volatile uint32_t *A_ptr = &A[a_idx];
-                volatile uint32_t *W_ptr = &W[w_idx];
-                volatile uint32_t *R_ptr = &result[r_idx];
-                A_ptr -= 16;
-                W_ptr -= 16;
+                    //uint32_t a_idx = j + i*J;
 
-                tensor_csr_st(0, R_ptr);
-                matmul8(A_ptr, W_ptr);
+                    for (int k = 0; k < K_PRIME / 8; k++) {
+                        //uint32_t w_idx = k + j*K;
+                        uint32_t r_idx = k + i*K;
+
+                        //volatile uint32_t *A_ptr = &A[a_idx];
+                        //volatile uint32_t *W_ptr = &W[w_idx];
+                        volatile uint32_t *R_ptr = &result[r_idx];
+                        //A_ptr -= 16;
+                        //W_ptr -= 16;
+
+                        tensor_csr_st(0, R_ptr);
+
+                        //matmul8(A_ptr, W_ptr);
+                        //
             }}}
 
         #elif defined(USE_FOR_LOOP)
@@ -184,7 +190,7 @@ int main(int argc, char** argv) {
         }
 
         bp_printf("Number of errors = %ld\n", errors);
-    }
+    } // for (t)
 
     return 0;
 }
