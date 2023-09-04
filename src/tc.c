@@ -156,9 +156,9 @@ int main(int argc, char** argv) {
             for (int i = 0; i < I_PRIME; i++) {
                 for (int j = 0; j < J_PRIME; j++) {
                     for (int k = 0; k < K_PRIME; k++) {
-                        uint32_t a_idx = ((uint32_t)A_ptr) + (j + i*J) - 16;
-                        uint32_t w_idx = ((uint32_t)W_ptr) + (k + j*K) - 16;
-                        uint32_t r_idx = ((uint32_t)R_ptr) + (k + i*K);
+                        uint64_t a_idx = ((uint64_t)A_ptr) + (j + i*J) - 16;
+                        uint64_t w_idx = ((uint64_t)W_ptr) + (k + j*K) - 16;
+                        uint64_t r_idx = ((uint64_t)R_ptr) + (k + i*K);
 
                         tensor_csr_st(0, r_idx);
                         matmul1(a_idx, w_idx);
