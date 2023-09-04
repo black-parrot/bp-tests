@@ -2,44 +2,41 @@
 #include <stdint.h>
 #include "bp_utils.h"
 #include "bp_asm.h"
-//#include "bp_dma.h"
+
+#define CEIL_DIV(A,D) (((A)+(D-1))/(D))
+
+//volatile uint32_t A[16] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {1654615998,1806341205,173879092,1112038970,2087043557,1739178872,1302718217,2046968324,1537810351,938204377,598176026,1210484339,600203567,407295012,1075916535,631194409};
+//volatile uint32_t W[16] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {1332073689,424185324,316721330,1418186270,2027837527,432508404,1519522183,1864753826,1358054485,878225224,2048741382,1901353491,1118805955,267488770,60308648,400599612};
+//volatile uint32_t expected[16] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {1690754557,2047255479,1893154686,473323126,160297096,390958786,496767499,1904048899,572875527,1021648205,909410692,1523968140,2077790157,1696133511,1875471694,52954182};
+//volatile uint32_t result[16] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {0};
 
 //#define USE_FOR_LOOP
 #define USE_TC
 
+#define TEST_CASE_1
+
+#if defined(TEST_CASE_1)
     #define I 4
-    #define J 128
-    #define K 128
+    #define J 4
+    #define K 4
 
-// BERT-1
-//    #define I 4
-//    #define J 768
-//    #define K 768
+    #define BUF_SIZE (128*128)
+    volatile uint32_t A        [BUF_SIZE] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {1,1,1,1,2,2,2,2,4,4,4,4,8,8,8,8};
+    volatile uint32_t W        [BUF_SIZE] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {16,32,64,128,16,32,64,128,16,32,64,128,16,32,64,128};
+    volatile uint32_t expected [BUF_SIZE] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255};
+    volatile uint32_t result   [BUF_SIZE] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {0};
 
-// BERT-2
-//    #define I 4
-//    #define J 3072
-//    #define K 768
+#endif
 
-// BERT-3
-//    #define I 4
-//    #define J 768
-//    #define K 3072
 
-#define I_SUB_PRIME (4)
-#define J_SUB_PRIME (4)
-#define K_SUB_PRIME (4)
 
-#define I_PRIME (I+3 / 4)
-#define J_PRIME (J+3 / 4)
-#define K_PRIME (K+3 / 4)
 
-#define BUF_SIZE (128*128)
 
-volatile uint32_t A        [BUF_SIZE] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
-volatile uint32_t W        [BUF_SIZE] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17};
-volatile uint32_t expected [BUF_SIZE] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {0};
-volatile uint32_t result   [BUF_SIZE] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {0};
+
+#define I_PRIME CEIL_DIV(I, 4)
+#define J_PRIME CEIL_DIV(J, 4)
+#define K_PRIME CEIL_DIV(K, 4)
+
 
 #define BP_PRINTF_MAXLEN 1024
 
@@ -147,22 +144,27 @@ char bp_printf_buf[BP_PRINTF_MAXLEN];
 int main(int argc, char** argv) {
 
     for (int t = 0; t < 2; t++) {
+
         uint64_t start_cycles = read_csr(mcycle);
-        uint32_t *const R_ptr = &result;
-        uint32_t *const W_ptr = &W;
-        uint32_t *const A_ptr = &A;
+
+        uint32_t *R_ptr = &result;
+
+        uint32_t *A_ptr = &A;
+        A_ptr -= 16;
+
+        uint32_t *W_ptr = &W;
+        W_ptr -= 16;
 
         #if defined(USE_TC)
             for (int i = 0; i < I_PRIME; i++) {
                 for (int j = 0; j < J_PRIME; j++) {
                     for (int k = 0; k < K_PRIME; k++) {
-                        uint64_t a_idx = ((uint64_t)A_ptr) + (j + i*J) - 16;
-                        uint64_t w_idx = ((uint64_t)W_ptr) + (k + j*K) - 16;
-                        uint64_t r_idx = ((uint64_t)R_ptr) + (k + i*K);
+                        //uint64_t a_idx = ((uint64_t)A_ptr) + (j + i*J) - 16;
+                        //uint64_t w_idx = ((uint64_t)W_ptr) + (k + j*K) - 16;
+                        //uint64_t r_idx = ((uint64_t)R_ptr) + (k + i*K);
 
-                        tensor_csr_st(0, r_idx);
-                        matmul1(a_idx, w_idx);
-
+                        tensor_csr_st(0, R_ptr);
+                        matmul1(A_ptr, W_ptr);
             }}}
 
         //#elif defined(USE_FOR_LOOP)
@@ -181,14 +183,14 @@ int main(int argc, char** argv) {
         uint64_t diff = end_cycles - start_cycles;
         bp_printf("Cycle Count = %lu\n", diff);
 
-        float flops = (float)(I*J*K) / diff;
-        bp_printf("FLOPS = %f\n", flops);
+        //float flops = (float)(I*J*K) / diff;
+        //bp_printf("FLOPS = %f\n", flops);
 
         uint64_t errors = 0;
         for (int i = 0; i < I*K; i++) {
             if (result[i] != expected[i]) {
                 errors++;
-                //bp_printf("%d: %d != %d\n", i, R[i], P[i]);
+                bp_printf("%d: %d != %d\n", i, result[i], expected[i]);
             }
         }
 
