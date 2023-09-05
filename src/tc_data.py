@@ -5,9 +5,9 @@ import numpy as np
 
 random.seed(0)
 
-I = 8
-J = 4
-K = 8
+I = 16
+J = 16
+K = 16
 SA_L = SA_H = SA_W = 4
 
 I_PRIME = I // SA_L
@@ -41,13 +41,9 @@ for kp in range(K_PRIME): # sub-K
                     for k_s in range(SA_W): # sub-K
                         R_blk[i_s][k_s] ^= A_blk[i_s][j_s] ^ W_blk[j_s][k_s]
             all_block_result[jp,ip,kp,:,:] = R_blk
-            block_result[ip,kp,:,:] ^= R_blk
+            block_result[ip,kp,:,:] = R_blk
 
 unblock_result = gemm_act_unblock_tensor(raw_act_shape=full_result.shape, act_data=block_result, array_height=SA_H, array_width=SA_W, accum_els=2*SA_L)
-
-print(f"// {A_rs[0,0,:,:]}")
-print(f"// {W_rs[0,0,:,:]}")
-print(f"// {all_block_result[0,0,0,:,:]}")
 
 #assert np.array_equal(full_result, unblock_result)
 
@@ -66,8 +62,15 @@ R_rs_str = ",".join(map(str,block_result.flatten().tolist()))
 #W_rs_str = "0"
 #R_rs_str = "0"
 
-print(f"#ifndef __TC_DATA_H__")
-print(f"#define __TC_DATA_H__")
+#print(f"#ifndef __TC_DATA_H__")
+#print(f"#define __TC_DATA_H__")
+print(f"")
+print(f"// {all_block_result[0,3,3,:,:]}")
+print(f"// {all_block_result[1,3,3,:,:]}")
+print(f"// {all_block_result[2,3,3,:,:]}")
+print(f"// {all_block_result[3,3,3,:,:]}")
+print(f"")
+print(f"")
 print(f"")
 print(f"#define I {I}")
 print(f"#define J {J}")
@@ -82,4 +85,4 @@ print("volatile uint32_t W[%d] %s = {%s};" % (J * K, attr, W_rs_str))
 print("volatile uint32_t expected[%d] %s = {%s};" % (I * K, attr, R_rs_str))
 print("volatile uint32_t result[%d] %s;" % (I * K, attr, ))
 print(f"")
-print(f"#endif // __TC_DATA_H__")
+#print(f"#endif // __TC_DATA_H__")
