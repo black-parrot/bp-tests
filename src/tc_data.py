@@ -22,9 +22,18 @@ def create_pow2_array(row, col, start_val, transpose):
 
 SA_L = SA_H = SA_W = 4
 
-for idx,s in enumerate([4, 8, 16, 32, 48, 64]):
+TEST_CASES = []
+TEST_CASES += [(4, 4, 4)]
+TEST_CASES += [(8, 8, 8)]
+TEST_CASES += [(16, 16, 16)]
+TEST_CASES += [(32, 32, 32)]
+TEST_CASES += [(48, 48, 48)]
+TEST_CASES += [(64, 64, 64)]
+TEST_CASES += [(4, 768, 768)]
 
-    I = J = K = s
+for idx,s in enumerate(TEST_CASES):
+
+    I,J,K = s
 
     I_PRIME = I // SA_L
     J_PRIME = J // SA_H

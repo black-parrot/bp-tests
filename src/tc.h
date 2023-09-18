@@ -14,6 +14,21 @@ char bp_printf_buf[BP_PRINTF_MAXLEN];
     bp_print_string(bp_printf_buf);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+// NUKE L2
+//
+
+// 128KB = 16K * 8 Bytes
+volatile uint64_t l2nuke [16*1024] __attribute__ ((aligned (64))) = {0};
+void nuke_l2 () {
+    bp_print_string("Nuking l2... ");
+    for (int q = 0; q < 16*1024; q++) {
+        uint64_t a = l2nuke[q];
+    }
+    bp_print_string("Done!\n");
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 // GENERAL ASM
 //
 

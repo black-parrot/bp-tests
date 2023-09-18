@@ -3,10 +3,11 @@
 #include "bp_utils.h"
 #include "bp_asm.h"
 
+#define NUM_TEST_ITER 1
 #define DEBUG
 
 #include "tc.h"
-#include "tc_1.h"
+#include "tc_6.h"
 
 
 void check() {
@@ -20,6 +21,11 @@ void check() {
         }
     }
     bp_printf("Number of errors = %ld\n", errors);
+    if (errors > 0) {
+        bp_print_string("\n\tERRORS DETECTED!!!\n\n");
+    } else {
+        bp_print_string("\n\tCorrect\n\n");
+    }
 }
 
 
@@ -34,29 +40,24 @@ void check_blk() {
         }
     }
     bp_printf("Number of errors = %ld\n", errors);
+    if (errors > 0) {
+        bp_print_string("\n\tERRORS DETECTED!!!\n\n");
+    } else {
+        bp_print_string("\n\tCorrect\n\n");
+    }
 }
-
-volatile uint64_t l2nuke [32*1024] __attribute__ ((aligned (64))) __attribute__ ((section (".data"))) = {0};
 
 void reset_gemm()
 {
-    bp_print_string("Clearing R_BLK... ");
-    for (int q = 0; q < I*K*(J/4); q++) {
-        R_BLK[q] = 0;
-    }
-    bp_print_string("Done!\n");
-    bp_print_string("Nuking l2... ");
-    for (int q = 0; q < 32*1024; q++) {
-        uint64_t a = l2nuke[q];
-    }
-    bp_print_string("Done!\n");
+    for (int q = 0; q < I*K*(J/4); q++) { R_BLK[q] = 0; }
 }
 
 int main(int argc, char** argv)
 {
-    for (int t = 0; t < 5; t++)
+    for (int t = 0; t < NUM_TEST_ITER; t++)
     {
         reset_gemm();
+        nuke_l2();
 
         uint64_t start_cycles = get_cycle();
 
@@ -75,7 +76,7 @@ int main(int argc, char** argv)
 
         for (uint64_t j = 0; j < JBLK; j++) {
         for (uint64_t k = 0; k < KBLK; k++) {
-        for (uint64_t i = 0; i < IBLK; i+=2) {
+        for (uint64_t i = 0; i < IBLK; i+=4) {
 
             uint64_t W_offset = (j + k*JBLK) * 64;
             uint64_t A_offset = (i + j*IBLK) * 64;
@@ -86,14 +87,14 @@ int main(int argc, char** argv)
             uint64_t R_ptr = R_base + R_offset;
 
             nop();
-            //nop();
-            //nop();
+            nop();
+            nop();
             if (!buf) {
                 tensor_csr_st(0, R_ptr);
-                mm2b0(W_ptr, A_ptr);
+                mm4b0(W_ptr, A_ptr);
             } else {
                 tensor_csr_st(1, R_ptr);
-                mm2b1(W_ptr, A_ptr);
+                mm4b1(W_ptr, A_ptr);
             }
             buf = !buf;
         }}}
