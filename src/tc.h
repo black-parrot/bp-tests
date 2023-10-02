@@ -19,6 +19,7 @@ char bp_printf_buf[BP_PRINTF_MAXLEN];
 
 // 128KB = 16K * 8 Bytes
 volatile uint64_t l2nuke [16*1024] __attribute__ ((aligned (64))) = {0};
+
 void nuke_l2 () {
     bp_print_string("Nuking l2... ");
     for (int q = 0; q < 16*1024; q++) {
@@ -48,178 +49,20 @@ void nuke_l2 () {
 // TENSOR CORE ASM
 //
 
-#define mm1b0(wt,addr) \
-     asm volatile ( \
-         ".insn i 0x0b, 0b000, %0, %0, 64\n\t" \
-         ".insn i 0x0b, 0b010, %1, %1, 64\n\t" \
-         "nop\n\t" \
-         "nop\n\t" \
-         "nop\n\t" \
-        : "+r" (wt), "+r" (addr) : \
-     );
-
-#define mm1b1(wt,addr) \
-    asm volatile ( \
-        ".insn i 0x0b, 0b001, %0, %0, 64\n\t" \
-        ".insn i 0x0b, 0b011, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        : "+r" (wt), "+r" (addr) : \
-    );
-
-#define mm2b0(wt,addr) ({ \
-    asm volatile ( \
-        ".insn i 0x0b, 0b000, %0, %0, 64\n\t" \
-        ".insn i 0x0b, 0b010, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b010, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        : "+r" (wt), "+r" (addr) : \
-    ); \
+#define tensor_wl(addr,buf,incr) ({                             \
+    asm volatile (                                              \
+         ".insn i 0x0b, 0b00" #buf ", %0, %0, " #incr "\n\t"    \
+         : "+r" (addr)                                          \
+         :                                                      \
+    );                                                          \
 })
 
-#define mm2b1(wt,addr) ({ \
-    asm volatile ( \
-        ".insn i 0x0b, 0b001, %0, %0, 64\n\t" \
-        ".insn i 0x0b, 0b011, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b011, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        : "+r" (wt), "+r" (addr) : \
-    ); \
-})
-
-#define mm4b0(wt,addr) ({ \
-    asm volatile ( \
-        ".insn i 0x0b, 0b000, %0, %0, 64\n\t" \
-        ".insn i 0x0b, 0b010, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b010, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b010, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b010, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        : "+r" (wt), "+r" (addr) : \
-    ); \
-})
-
-#define mm4b1(wt,addr) ({ \
-    asm volatile ( \
-        ".insn i 0x0b, 0b001, %0, %0, 64\n\t" \
-        ".insn i 0x0b, 0b011, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b011, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b011, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b011, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        : "+r" (wt), "+r" (addr) : \
-    ); \
-})
-
-#define mm8b0(wt,addr) ({ \
-    asm volatile ( \
-        ".insn i 0x0b, 0b000, %0, %0, 64\n\t" \
-        ".insn i 0x0b, 0b010, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b010, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b010, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b010, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b010, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b010, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b010, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b010, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        : "+r" (wt), "+r" (addr) : \
-    ); \
-})
-
-#define mm8b1(wt,addr) ({ \
-    asm volatile ( \
-        ".insn i 0x0b, 0b001, %0, %0, 64\n\t" \
-        ".insn i 0x0b, 0b011, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b011, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b011, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b011, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b011, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b011, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b011, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        ".insn i 0x0b, 0b011, %1, %1, 64\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        "nop\n\t" \
-        : "+r" (wt), "+r" (addr) : \
-    ); \
+#define tensor_al(addr,buf,incr) ({                             \
+    asm volatile (                                              \
+         ".insn i 0x0b, 0b01" #buf ", %0, %0, " #incr "\n\t"    \
+         : "+r" (addr)                                          \
+         :                                                      \
+    );                                                          \
 })
 
 #endif // __TC_H__
