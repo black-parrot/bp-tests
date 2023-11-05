@@ -90,7 +90,7 @@ def round_up_to_multiple(val: int, multiple: int) -> int:
 
 
 if __name__ == '__main__':
-    I,J,K = 4,768,768
+    I,J,K = 4,128,128
     print('#define mm(a_ptr,w_ptr,r_ptr) ({ \\')
     print('\tvolatile uint32_t null = 0; \\')
     print('\tvolatile uint32_t *null_ptr = &null; \\')
