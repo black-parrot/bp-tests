@@ -31,7 +31,7 @@ BP_TESTS_C = \
   misaligned_instructions_virtual_memory \
   execute_dynamic_instruction \
   dma_memcpy            \
-  tc \
+  neo
 
 BP_MULTICORE_TESTS_C = \
   mc_sanity             \
