@@ -31,7 +31,15 @@ BP_TESTS_C = \
   misaligned_instructions_virtual_memory \
   execute_dynamic_instruction \
   dma_memcpy            \
-  neo_resnet50_2
+  neo_resnet50_1 \
+  neo_resnet50_2 \
+  neo_resnet50_3 \
+  neo_dlrm_1 \
+  neo_dlrm_2 \
+  neo_dlrm_3 \
+  neo_bert_1 \
+  neo_bert_2 \
+  neo_bert_3 \
 
 BP_MULTICORE_TESTS_C = \
   mc_sanity             \
