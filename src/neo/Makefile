@@ -14,3 +14,4 @@ all:
 	python3 generate_neo_test_cases.py 16 3072 768   > ../neo_bert_2_n16.c
 	python3 generate_neo_test_cases.py 32 3072 768   > ../neo_bert_2_n32.c
 	python3 generate_neo_test_cases.py 64 3072 768   > ../neo_bert_2_n64.c
+	python3 generate_neo_test_cases.py 64 64 64   > ../neo_test_1.c
