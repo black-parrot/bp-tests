@@ -3,35 +3,6 @@ from math import ceil, floor
 from typing import Tuple
 
 
-
-# ==========================================================
-#   FROM RASA
-# ==========================================================
-#       RESNET50-1: N=32, K=C=64, X=Y=56, R=S=1
-#       RESNET50-2: N=32, K=C=64, X=Y=56, R=S=3
-#       RESNET50-3: N=32, K=512, C=1024, X=Y=14, R=S=1
-#       DLRM-1: N=512, NIN=1024, NON=1024
-#       DLRM-2: N=512, NIN=1024, NON=64
-#       DLRM-3: N=512, NIN=2048, NON=2048
-#       BERT-1: N=256, NIN=768, NON=768
-#       BERT-2: N=256, NIN=3072, NON=768
-#       BERT-3: N=256, NIN=768, NON=3072
-# ==========================================================
-
-
-
-def get_block_shape_2d(shape, sa_h=4, sa_w=4) -> Tuple[int,int,int,int]:
-    assert len(shape) == 2
-    rows, cols = (
-        round_up_to_multiple(shape[0], sa_h),
-        round_up_to_multiple(shape[1], sa_w),
-    )
-    blocks_y = rows // sa_h
-    blocks_x = cols // sa_w
-    return (blocks_y, blocks_x, sa_h, sa_w)
-
-
-
 def generate_matmul_kernel(A_shape, W_shape, sa_h=4, sa_w=4):
     result = []
     assert len(A_shape) == 2
@@ -44,8 +15,6 @@ def generate_matmul_kernel(A_shape, W_shape, sa_h=4, sa_w=4):
     result.append(f"for(int k = 0; k < {K_blk}; k++) {'{'}")
     result.append('_a = a_ptr - 16 + i * a_offset;')
     for j in range(J_blk):
-        #result.append(asm_load("act", j==0, j==(J_blk-1)))
-        #result.append(asm_load("wt",  j==0, j==(J_blk-1)))
         result.append(asm_load("act", False, j==(J_blk-1)))
         result.append(asm_load("wt",  False, j==(J_blk-1)))
     result.append(f'__asm__ __volatile__(".insn i 0x0b, 0b101, x0, %0, 0"::"rK"(_r));')
@@ -53,6 +22,17 @@ def generate_matmul_kernel(A_shape, W_shape, sa_h=4, sa_w=4):
     result.append("}")
     result.append("}")
     return result
+
+
+def get_block_shape_2d(shape, sa_h=4, sa_w=4) -> Tuple[int,int,int,int]:
+    assert len(shape) == 2
+    rows, cols = (
+        round_up_to_multiple(shape[0], sa_h),
+        round_up_to_multiple(shape[1], sa_w),
+    )
+    blocks_y = rows // sa_h
+    blocks_x = cols // sa_w
+    return (blocks_y, blocks_x, sa_h, sa_w)
 
 
 def asm_load(dtype, first, last):
@@ -88,20 +68,52 @@ def round_up_to_multiple(val: int, multiple: int) -> int:
         return val
     return val + (multiple - mod)
 
-def generate(I,J,K):
-    print(f'volatile uint32_t A[{I*J}] __attribute__ ((aligned (64)));')
-    print(f'volatile uint32_t W[{J*K}] __attribute__ ((aligned (64)));')
-    print(f'volatile uint32_t R[{I*K}] __attribute__ ((aligned (64)));')
-    print('#define mm(a_ptr,w_ptr,r_ptr) ({ \\')
-    print('\tvolatile uint32_t null = 0; \\')
-    print('\tvolatile uint32_t *null_ptr = &null; \\')
-    print('\tvolatile uint32_t *_a = a_ptr; \\')
-    print('\tvolatile uint32_t *_w = w_ptr; \\')
-    print('\tvolatile uint32_t *_r = r_ptr; \\')
-    print('\n'.join(map(lambda x: '\t' + x + ' \\', generate_matmul_kernel((I,J), (J,K), sa_h=4, sa_w=4))))
-    print('})')
+
+def generate(I, J, K):
+    newline = '\n'
+    kernel = generate_matmul_kernel((I,J), (J,K), sa_h=4, sa_w=4)
+    templ = \
+    print(f'''
+#include <stdio.h>
+#include <stdint.h>
+#include "bp_utils.h"
+#include "bp_asm.h"
+#include "neo.h"
+
+int main(int argc, char** argv)
+{'{'}
+    volatile uint32_t A[{I*J}] __attribute__ ((aligned (64)));
+    volatile uint32_t W[{J*K}] __attribute__ ((aligned (64)));
+    volatile uint32_t R[{I*K}] __attribute__ ((aligned (64)));
+    cbo_flush_all();
+
+    volatile uint32_t null = 0;
+    volatile uint32_t *null_ptr = &null;
+
+    volatile uint32_t *_a = A;
+    volatile uint32_t *_w = W;
+    volatile uint32_t *_r = R;
+
+    volatile uint32_t *a_ptr = A;
+    volatile uint32_t *w_ptr = W;
+    volatile uint32_t *r_ptr = R;
+
+    uint64_t start_cycles = get_cycle();
+
+{newline.join(map(lambda x: '    ' + x, kernel))}
+
+    uint64_t end_cycles = get_cycle();
+    uint64_t diff = end_cycles - start_cycles;
+    bp_printf("Cycle Count = %lu\\n", diff);
+    bp_printf("Number of Ops = %lu\\n", {I*J*K});
+
+    bp_printf("%s\\n", "Test complete!");
+    return 0;
+{'}'}
+''')
+
 
 if __name__ == "__main__":
     import sys
-    I,J,K = tuple(map(int,sys.argv[1:]))
-    generate(I,J,K)
+    I, J, K = tuple(map(int,sys.argv[1:]))
+    generate(I, J, K)

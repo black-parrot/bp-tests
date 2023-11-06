@@ -192,24 +192,6 @@ void matmul_cpu (
 /**
  *
  */
-void matmul_os (
-    volatile uint32_t* a_ptr,
-    volatile uint32_t* w_ptr,
-    volatile uint32_t* r_ptr
-) {
-    uint64_t start_cycles = get_cycle();
-
-    mm(a_ptr, w_ptr, r_ptr);
-
-    uint64_t end_cycles = get_cycle();
-    uint64_t diff = end_cycles - start_cycles;
-    bp_printf("Cycle Count = %lu\n", diff);
-}
-
-
-/**
- *
- */
 bool check_array (
     uint32_t *result,
     uint32_t *expected,
