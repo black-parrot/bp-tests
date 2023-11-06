@@ -10,6 +10,7 @@ int main(int argc, char** argv)
 {
     cbo_flush_all();
     matmul_os(A, W, R);
+    matmul_os(A, W, R);
     bp_printf("%s\n", "Test complete!");
     return 0;
 }
