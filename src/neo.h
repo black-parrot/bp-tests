@@ -1,34 +1,11 @@
 #ifndef __NEO_H__
 #define __NEO_H__
 
-#include "../bp_printf.h"
-#include "mm.h"
-
+#include "bp_printf.h"
 
 // BP ASM
 #define nop() __asm__ __volatile__("nop")
 #define get_cycle() read_csr(mcycle)
-
-// TensorCore ASM
-#define tc_nop() __asm__ __volatile__(".insn i 0x0b, 0b100, x0, x0, 0"::);
-#define tc_load_w(ptr) __asm__ __volatile__(".insn i 0x0b, 0b000, %0, %0, 0":"+r"(ptr):);
-#define tc_load_a(ptr) __asm__ __volatile__(".insn i 0x0b, 0b010, %0, %0, 0":"+r"(ptr):);
-
-#define tc_load_a_off(src,dest,off) ({ \
-    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, %1, " #off "" : "+r"(dest) : "r"(src) ); \
-})
-#define tc_load_a_off_last(src,dest,off) ({ \
-    __asm__ __volatile__(".insn i 0x0b, 0b011, %0, %1, " #off "" : "+r"(dest) : "r"(src) ); \
-})
-
-#define tc_load_w_off(ptr,off) ({ \
-    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, %0, " #off "" : : "r"(ptr)); \
-})
-#define tc_load_w_off_last(ptr,off) ({ \
-    __asm__ __volatile__(".insn i 0x0b, 0b001, %0, %0, " #off "" : : "r"(ptr)); \
-})
-
-#define tc_store(ptr)  __asm__ __volatile__(".insn i 0x0b, 0b101, x0, %0, 0"::"rK"(ptr));
 
 /**
  * Convert an I by J matrix into a tiled matrix.
@@ -218,18 +195,8 @@ void matmul_cpu (
 void matmul_os (
     volatile uint32_t* a_ptr,
     volatile uint32_t* w_ptr,
-    volatile uint32_t* r_ptr,
-    const int I,
-    const int J,
-    const int K
+    volatile uint32_t* r_ptr
 ) {
-    const int IBLK = I / 4;
-    const int JBLK = J / 4;
-    const int KBLK = K / 4;
-
-    //uint32_t dnull;
-    //volatile uint32_t* foo = &dnull;
-
     uint64_t start_cycles = get_cycle();
 
     mm(a_ptr, w_ptr, r_ptr);
@@ -237,9 +204,6 @@ void matmul_os (
     uint64_t end_cycles = get_cycle();
     uint64_t diff = end_cycles - start_cycles;
     bp_printf("Cycle Count = %lu\n", diff);
-
-    uint64_t FLOPS = (I*J*K) / diff;
-    bp_printf("FLOPs (floor) = %lu\n", FLOPS);
 }
 
 
@@ -287,4 +251,4 @@ void print_array_dec (uint32_t *arr, uint32_t els)
     }
 }
 
-#endif __NEO_H__
+#endif // __NEO_H__

@@ -88,14 +88,24 @@ def round_up_to_multiple(val: int, multiple: int) -> int:
         return val
     return val + (multiple - mod)
 
+def generate(I,J,K,filename):
+    with open(filename, 'w') as f:
+        print(f'volatile uint32_t A[{I*J}] __attribute__ ((aligned (64)));', file=f)
+        print(f'volatile uint32_t W[{J*K}] __attribute__ ((aligned (64)));', file=f)
+        print(f'volatile uint32_t R[{I*K}] __attribute__ ((aligned (64)));', file=f)
+        print('#define mm(a_ptr,w_ptr,r_ptr) ({ \\', file=f)
+        print('\tvolatile uint32_t null = 0; \\', file=f)
+        print('\tvolatile uint32_t *null_ptr = &null; \\', file=f)
+        print('\tvolatile uint32_t *_a = a_ptr; \\', file=f)
+        print('\tvolatile uint32_t *_w = w_ptr; \\', file=f)
+        print('\tvolatile uint32_t *_r = r_ptr; \\', file=f)
+        print('\n'.join(map(lambda x: '\t' + x + ' \\', generate_matmul_kernel((I,J), (J,K), sa_h=4, sa_w=4))), file=f)
+        print('})', file=f)
 
-if __name__ == '__main__':
-    I,J,K = 4,128,128
-    print('#define mm(a_ptr,w_ptr,r_ptr) ({ \\')
-    print('\tvolatile uint32_t null = 0; \\')
-    print('\tvolatile uint32_t *null_ptr = &null; \\')
-    print('\tvolatile uint32_t *_a = a_ptr; \\')
-    print('\tvolatile uint32_t *_w = w_ptr; \\')
-    print('\tvolatile uint32_t *_r = r_ptr; \\')
-    print('\n'.join(map(lambda x: '\t' + x + ' \\', generate_matmul_kernel((I,J), (J,K), sa_h=4, sa_w=4))))
-    print('})')
+if __name__ == "__main__":
+    # BERT-1: N=1, NIN=768, NON=768
+    #generate(4, 768, 768, "neo_bert_1.h")
+
+    # RESNET50-2: N=1, K=C=64, X=Y=56, R=S=3
+    #   IM2COL'd: 3136 x 576 x 64
+    generate(3136, 576, 64, "neo_resnet50_2.h")

@@ -1,2 +1,2 @@
 all:
-	python3 helper.py | tee -i mm.h
+	python3 generate_neo_test_cases.py
