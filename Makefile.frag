@@ -40,6 +40,12 @@ BP_TESTS_C = \
   neo_bert_1 \
   neo_bert_2 \
   neo_bert_3 \
+  neo_bert_2_n1 \
+  neo_bert_2_n4 \
+  neo_bert_2_n8 \
+  neo_bert_2_n16 \
+  neo_bert_2_n32 \
+  neo_bert_2_n64 \
 
 BP_MULTICORE_TESTS_C = \
   mc_sanity             \

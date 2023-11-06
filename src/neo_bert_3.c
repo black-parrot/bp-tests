@@ -5,9 +5,9 @@
 #include "bp_asm.h"
 #include "neo.h"
 
-volatile uint32_t A[1806336] __attribute__ ((aligned (64))) = {0};
-volatile uint32_t W[36864] __attribute__ ((aligned (64))) = {0};
-volatile uint32_t R[200704] __attribute__ ((aligned (64))) = {0};
+volatile uint32_t A[196608] __attribute__ ((aligned (64))) = {0};
+volatile uint32_t W[2359296] __attribute__ ((aligned (64))) = {0};
+volatile uint32_t R[786432] __attribute__ ((aligned (64))) = {0};
 
 int main(int argc, char** argv)
 {
@@ -26,11 +26,107 @@ int main(int argc, char** argv)
 
     uint64_t start_cycles = get_cycle();
 
-    for(int i = 0; i < 784; i++) {
-    uint64_t a_offset = i * 2304;
+    for(int i = 0; i < 64; i++) {
+    uint64_t a_offset = i * 3072;
     _w = w_ptr - 16;
-    for(int k = 0; k < 16; k++) {
+    for(int k = 0; k < 768; k++) {
     _a = a_ptr - 16 + i * a_offset;
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
+    __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
+    __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
     __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
     __asm__ __volatile__(".insn i 0x0b, 0b000, %0, 64(%1)" : "+r"(_w) : "r"(_w) );
     __asm__ __volatile__(".insn i 0x0b, 0b010, %0, 64(%1)" : "+r"(_a) : "r"(_a) );
@@ -327,7 +423,7 @@ int main(int argc, char** argv)
     uint64_t end_cycles = get_cycle();
     uint64_t diff = end_cycles - start_cycles;
     bp_printf("Cycle Count = %lu\n", diff);
-    bp_printf("Number of Ops = %lu\n", 115605504);
+    bp_printf("Number of Ops = %lu\n", 603979776);
 
     bp_printf("%s\n", "Test complete!");
     return 0;

@@ -80,11 +80,12 @@ def generate(I, J, K):
 #include "bp_asm.h"
 #include "neo.h"
 
+volatile uint32_t A[{I*J}] __attribute__ ((aligned (64))) = {'{'}0{'}'};
+volatile uint32_t W[{J*K}] __attribute__ ((aligned (64))) = {'{'}0{'}'};
+volatile uint32_t R[{I*K}] __attribute__ ((aligned (64))) = {'{'}0{'}'};
+
 int main(int argc, char** argv)
 {'{'}
-    volatile uint32_t A[{I*J}] __attribute__ ((aligned (64)));
-    volatile uint32_t W[{J*K}] __attribute__ ((aligned (64)));
-    volatile uint32_t R[{I*K}] __attribute__ ((aligned (64)));
     cbo_flush_all();
 
     volatile uint32_t null = 0;
