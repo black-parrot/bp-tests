@@ -3,7 +3,7 @@ include Makefile.frag
 
 RISCV_GCC           = $(CROSS_COMPILE)gcc
 RISCV_GPP           = $(CROSS_COMPILE)g++
-RISCV_GCC_OPTS      = -march=rv64imafd -mabi=lp64 -mcmodel=medany -I$(BP_SDK_INCLUDE_DIR) -O3
+RISCV_GCC_OPTS      = -march=rv64imafdc -mabi=lp64d -mcmodel=medany -I$(BP_SDK_INCLUDE_DIR) -O3
 RISCV_LINK_OPTS     = -T$(BP_SDK_LINKER_DIR)/riscv.ld -L$(BP_SDK_LIB_DIR) -Wl,--whole-archive -lperchbm -Wl,--no-whole-archive
 
 .PHONY: all
