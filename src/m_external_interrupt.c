@@ -9,7 +9,7 @@
 void pass() { bp_finish(0); }
 void fail() { bp_finish(1); }
 
-volatile unsigned *m_mode_ext = 0x30b000UL;
+volatile unsigned *m_mode_ext = (unsigned *) 0x30b000UL;
 volatile unsigned cnt; // avoid being optimized away
 volatile unsigned state;
 

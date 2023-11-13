@@ -9,7 +9,7 @@
 void pass() { bp_finish(0); }
 void fail() { bp_finish(1); }
 
-volatile unsigned *s_mode_ext = 0x30b004UL;
+volatile unsigned *s_mode_ext = (unsigned *) 0x30b004UL;
 volatile unsigned state;
 
 void trap_handler(void) __attribute__((interrupt));
