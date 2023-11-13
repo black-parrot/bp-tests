@@ -74,7 +74,7 @@ void bp_call_vector_dot_product_accelerator(uint8_t type, struct VDP_CSR vdp_csr
   uint64_t *cfg_base_addr;
   cfg_base_addr = type ? SACCEL_VDP_BASE_ADDR : CACCEL_VDP_BASE_ADDR;
 
-  uint64_t *sac_cfg = (uint64_t *) CONFIG_REG_HIO_MASK;
+  uint32_t *sac_cfg = (uint32_t *) CONFIG_REG_HIO_MASK;
   bp_set_mmio_csr32(sac_cfg, 0, 1);//enable sac mem region csr 
 
   if(type){
@@ -116,7 +116,7 @@ void bp_hw_dma(uint64_t *cfg_base_dma_addr, uint64_t *src, uint64_t length, uint
 
 uint64_t bp_call_loopback_accelerator(uint64_t *input_ptr, uint64_t *resp_ptr, uint64_t len)
 {
-  uint64_t *sac_cfg = (uint64_t *) CONFIG_REG_HIO_MASK;
+  uint32_t *sac_cfg = (uint32_t *) CONFIG_REG_HIO_MASK;
   bp_set_mmio_csr32(sac_cfg, 0, 1);//enable sac mem region csr 
  
   //write to the accelerator memory region
@@ -135,7 +135,7 @@ uint64_t bp_call_loopback_accelerator(uint64_t *input_ptr, uint64_t *resp_ptr, u
 
 uint64_t bp_call_zipline_accelerator(uint8_t type, struct Zipline_CSR zipline_csrs, uint64_t input_tlv_num)
 {
-  uint64_t *sac_cfg = (uint64_t *) CONFIG_REG_HIO_MASK;
+  uint32_t *sac_cfg = (uint32_t *) CONFIG_REG_HIO_MASK;
   bp_set_mmio_csr32(sac_cfg, 0, 1);//enable sac mem region csr
  
   uint64_t *cfg_base_addr;
