@@ -35,7 +35,8 @@ BP_TESTS_C = \
   fp_precision          \
   fp_neg_zero_nanbox    \
   fp_signed_zero        \
-  l2_uncached
+  l2_uncached           \
+  l2_cache_ops
 
 BP_MULTICORE_TESTS_C = \
   mc_sanity             \
