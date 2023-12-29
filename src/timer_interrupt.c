@@ -14,11 +14,13 @@ uint64_t *mtime    = (uint64_t *) 0x30bff8;
 void pass() { bp_finish(0); }
 void fail() { bp_finish(1); }
 
-void trap_success(void) __attribute__((interrupt));
-void trap_success() {
+#pragma GCC push_options
+#pragma GCC optimize ("align-functions=16")
+void __attribute__((interrupt)) trap_success(void) {
     // Read mcause
     uint64_t mcause;
     __asm__ __volatile__ ("csrr %0, mcause" : "=r" (mcause));
+    bp_print_string("Interrupt\n");
 
     // Check for interrupt
     if ((mcause >> 63) == 1) {
@@ -38,6 +40,7 @@ void trap_success() {
       fail();
     }
 }
+#pragma GCC pop_options
 
 void main(uint64_t argc, char * argv[]) {
    uint64_t mie = (1 << 7) | (1 << 5) | (1 << 4); // M + S + U timer interrupt enable
@@ -45,8 +48,9 @@ void main(uint64_t argc, char * argv[]) {
    // Set up trap to alternate handler
    __asm__ __volatile__ ("csrw mtvec, %0": : "r" (&trap_success));
    // Setting up mtimecmp and mtime with some arbitrary values
-   *mtimecmp = 64;
+   *mtimecmp = 16384;
    *mtime = 0;
+    bp_print_string("Enabling Interrupts...\n");
    // Enabling interrupts for User, Supervisor and Machine mode
    __asm__ __volatile__ ("csrw mie, %0": : "r" (mie));
    __asm__ __volatile__ ("csrw mstatus, %0" : : "r" (mstatus));
