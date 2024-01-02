@@ -2,6 +2,8 @@
 
 #include "bp_utils.h"
 
+#pragma GCC push_options
+#pragma GCC optimize ("align-functions=16")
 void copy_function(void) {
     bp_cprint('h');
     bp_cprint('e');
@@ -10,6 +12,7 @@ void copy_function(void) {
     bp_cprint('o');
     bp_cprint('\n');
 }
+#pragma GCC pop_options
 
 uint64_t main(uint64_t argc, char *argv[]) {
     uint64_t *copy_start = (uint64_t *)(copy_function);
@@ -28,3 +31,4 @@ uint64_t main(uint64_t argc, char *argv[]) {
 
     return 0;
 }
+
