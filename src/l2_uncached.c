@@ -4,14 +4,12 @@
 
 // This test checks for uncached and cached accesses to the same address
 
-volatile uint64_t *access_addr = (uint64_t *) 0x83000000;
-
 void main(uint64_t argc, char * argv[]) {
   volatile uint64_t value;
   // Check uncached DRAM space
-  uint64_t dram_bit = (1ULL << 32ULL); // For caddr = 32
-  volatile uint64_t *l1_access_addr = (uint64_t *) access_addr;
-  volatile uint64_t *l2_access_addr = (uint64_t *) ((uint64_t) l1_access_addr | dram_bit);
+
+  uint64_t *l1_access_addr = (uint64_t *) (0x083000000);
+  uint64_t *l2_access_addr = (uint64_t *) (0x183000000);
 
   // Test uncached L1 access
   // L1 = 0xdead
