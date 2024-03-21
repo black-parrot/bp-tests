@@ -1,9 +1,12 @@
 
+WITH_MARCH ?= rv64gc
+WITH_MABI ?= lp64d
+
 include Makefile.frag
 
 RISCV_GCC           = $(CROSS_COMPILE)gcc
 RISCV_GPP           = $(CROSS_COMPILE)g++
-RISCV_GCC_OPTS      = -march=rv64gc -mabi=lp64d -mcmodel=medany -I$(BP_SDK_INCLUDE_DIR)
+RISCV_GCC_OPTS      = -march=$(WITH_MARCH) -mabi=$(WITH_MABI) -mcmodel=medany -I$(BP_SDK_INCLUDE_DIR)
 RISCV_LINK_OPTS     = -T$(BP_SDK_LINKER_DIR)/riscv.ld -L$(BP_SDK_LIB_DIR) -Wl,--whole-archive -lperchbm -Wl,--no-whole-archive
 
 .PHONY: all
