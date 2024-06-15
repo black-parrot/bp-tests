@@ -56,21 +56,14 @@ void unlock(volatile uint64_t *addr) {
                                                  :);
 }
 
-void sync_barrier(volatile uint64_t *barrier_addr) {
+void sync_barrier(volatile uint64_t *barrier_addr, uint64_t entry) {
+    // increment the barrier
     __asm__ __volatile__ ("amoadd.d x0, %1, (%0)": : "r"(barrier_addr), "r"(1));
-    uint32_t num_cores = bp_param_get(PARAM_CC_X_DIM) * bp_param_get(PARAM_CC_Y_DIM);
-    while (*barrier_addr != num_cores) { };
-    uint64_t core_id;
-    __asm__ __volatile__ ("csrr %0, mhartid": "=r"(core_id): :);
-    //bp_cprint('b');
-    //bp_cprint('a');
-    //bp_cprint('r');
-    //bp_cprint(' ');
-    //bp_hprint(core_id);
-    //bp_cprint('-');
-    //bp_hprint(num_cores);
-    //bp_cprint('\n');
-    if (core_id == 0) { *barrier_addr = 0; }
+    // wait for all cores to increment barrier
+    uint64_t num_cores = bp_param_get(PARAM_CC_X_DIM) * bp_param_get(PARAM_CC_Y_DIM);
+    // compute the value required in the barrier, based on how many syncs have been called
+    uint64_t expected = num_cores * entry;
+    while (*barrier_addr != expected) { };
 }
 
 #endif

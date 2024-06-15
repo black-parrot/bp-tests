@@ -16,7 +16,10 @@ uint64_t main(uint64_t argc, char * argv[]) {
   uint64_t sc_load = 0;
   int i = 0;
 
-  sync_barrier(&barrier_mem);
+  uint64_t barrier_entry = 1;
+
+  sync_barrier(&barrier_mem, barrier_entry);
+  barrier_entry++;
 
   // main loop
   // Execute LR/SC that performs amo_add.d of 1 to amo_target
@@ -36,7 +39,8 @@ uint64_t main(uint64_t argc, char * argv[]) {
     );
 
   // all cores synchronize at end
-  sync_barrier(&barrier_mem);
+  sync_barrier(&barrier_mem, barrier_entry);
+  barrier_entry++;
 
   uint32_t num_cores = bp_param_get(PARAM_CC_X_DIM) * bp_param_get(PARAM_CC_Y_DIM);
   uint64_t total = num_cores * N;
