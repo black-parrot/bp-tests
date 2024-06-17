@@ -4,7 +4,7 @@
 #include "mc_util.h"
 
 // N must be multiple of 100
-#define N 100
+#define N 500
 
 #define LOOP_INSTR \
 {                  \

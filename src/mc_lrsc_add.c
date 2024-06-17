@@ -4,7 +4,7 @@
 #include "mc_util.h"
 
 // number of iterations for each core to run the main loop
-#define N 100
+#define N 500
 
 volatile uint64_t barrier_mem __attribute__((aligned(64))) = 0;
 volatile uint64_t amo_target __attribute__ ((aligned (64))) = 0;
